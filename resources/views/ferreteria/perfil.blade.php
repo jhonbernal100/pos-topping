@@ -1,11 +1,11 @@
 @extends('layouts.pos')
 
-@section('titulo', 'Mi Ferretería')
+@section('titulo', 'Mi Negocio')
 
 @section('contenido')
 <div style="max-width:600px;margin:24px auto;padding:0 16px;">
     <div style="background:#fff;border-radius:12px;padding:24px;">
-        <h2 style="font-size:20px;margin-bottom:20px;">🏪 Datos de mi ferretería</h2>
+        <h2 style="font-size:20px;margin-bottom:20px;">🏪 Datos de mi negocio</h2>
 
         <div style="margin-bottom:16px;">
             <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">Nombre</label>

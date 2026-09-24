@@ -31,7 +31,7 @@ class MensajeController extends Controller
         if (!$gerente) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'No se encontro gerente para esta ferreteria',
+                'mensaje' => 'No se encontró gerente para este negocio',
             ], 422);
         }
 
@@ -61,7 +61,7 @@ class MensajeController extends Controller
         ]);
     }
 
-    // Enviar a todas las ferreterías
+    // Enviar a todas los negocios
     public function enviarMasivo(Request $request)
     {
         $request->validate([
@@ -100,7 +100,7 @@ class MensajeController extends Controller
 
         return response()->json([
             'success' => true,
-            'mensaje' => "Mensaje enviado a {$enviados} ferreterias",
+            'mensaje' => "Mensaje enviado a {$enviados} negocios",
         ]);
     }
 
@@ -150,7 +150,7 @@ class MensajeController extends Controller
                 $numero = '57' . $numero;
             }
 
-            $texto = "POS Ferretero - {$asunto}: {$contenido}";
+            $texto = "POS Topping - {$asunto}: {$contenido}";
 
             $response = Http::withHeaders([
                 'Authorization' => "App {$apiKey}",

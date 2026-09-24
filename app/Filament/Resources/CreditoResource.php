@@ -25,7 +25,7 @@ class CreditoResource extends Resource
         return $form->schema([
             Forms\Components\Section::make('Información del crédito')->schema([
                 Forms\Components\Select::make('tenant_id')
-                    ->label('Ferretería')
+                    ->label('Negocio')
                     ->options(Tenant::where('activo', true)->pluck('nombre', 'id'))
                     ->required()
                     ->searchable()
@@ -71,7 +71,7 @@ class CreditoResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('tenant.nombre')
-                    ->label('Ferretería')
+                    ->label('Negocio')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('cliente.nombre')
@@ -107,7 +107,7 @@ class CreditoResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('tenant_id')
-                    ->label('Ferretería')
+                    ->label('Negocio')
                     ->options(Tenant::pluck('nombre', 'id')),
                 Tables\Filters\SelectFilter::make('estado')
                     ->options([

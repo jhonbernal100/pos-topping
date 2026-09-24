@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificar cuenta — POS Ferretero</title>
+    <title>Verificar cuenta — POS Topping</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -131,7 +131,7 @@
 <div class="container">
 
     <div class="logo">
-        <img src="/images/logo-pos-ferretero.png" alt="POS Ferretero">
+        <img src="/images/logo-pos-ferretero.png" alt="POS Topping">
     </div>
 
     <div class="pasos">
@@ -184,7 +184,7 @@
     <div class="exito-box" id="panel-exito">
         <h3>Cuenta activada</h3>
         <p>
-            Tu ferreteria tiene 30 dias de demo gratuito.<br><br>
+            Tu negocio tiene 30 días de demo gratuito.<br><br>
             Revisa tu correo — te enviamos las credenciales de acceso para ingresar al sistema.
         </p>
         <br>

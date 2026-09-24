@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('titulo', 'POS Ferretero')</title>
+    <title>@yield('titulo', 'POS Topping')</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="POS Ferretero">
+    <meta name="apple-mobile-web-app-title" content="POS Topping">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; background: #f0f0f0; display: flex; flex-direction: column; min-height: 100vh; }
@@ -195,7 +195,7 @@
     <nav class="navbar">
         <a href="{{ auth()->user()->rol === 'superadmin' ? '/admin/dashboard' : '/ventas/crear' }}"
            class="navbar-brand">
-            POS Ferretero
+            POS Topping
         </a>
 
         <div class="navbar-right">
@@ -295,7 +295,7 @@
                 </a>
                 <a href="/ferreteria/perfil"
                    class="{{ request()->is('ferreteria/perfil') ? 'activo' : '' }}">
-                    Mi ferreteria
+                    Mi negocio
                 </a>
                 <a href="/ferreteria/suscripcion"
                    class="{{ request()->is('ferreteria/suscripcion') ? 'activo' : '' }}">

@@ -24,7 +24,7 @@
         <tr>
             <td style="width:70%;vertical-align:middle;">
                 <h1 style="font-size:20px;color:#fff;margin-bottom:4px;">
-                    {{ auth()->user()->tenant->nombre ?? 'Ferreteria' }}
+                    {{ auth()->user()->tenant->nombre ?? 'Negocio' }}
                 </h1>
                 <p style="font-size:11px;opacity:.8;">
                     NIT: {{ auth()->user()->tenant->nit ?? '' }} |
@@ -153,6 +153,6 @@
     </table>
 </div>
 
-<div class="footer">Sistema POS Ferretero - Avanzas Digital</div>
+<div class="footer">Sistema POS Topping - Avanzas Digital</div>
 </body>
 </html>

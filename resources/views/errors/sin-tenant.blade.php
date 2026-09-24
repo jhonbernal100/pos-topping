@@ -20,12 +20,12 @@
     <div class="card">
         <div class="icon">⚠️</div>
         <h1>Acceso no disponible</h1>
-        <p>No encontramos una ferretería activa asociada a tu cuenta. Contacta a tu proveedor para activar el servicio.</p>
+        <p>No encontramos un negocio activo asociada a tu cuenta. Contacta a tu proveedor para activar el servicio.</p>
         <a href="https://www.avanzas.digital/index.html" target="_blank" class="btn">
             Contactar Avanzas Digital
         </a>
         <div class="footer">
-            Sistema POS Ferretero desarrollado por
+            Sistema POS Topping desarrollado por
             <a href="https://www.avanzas.digital/index.html" target="_blank">Avanzas Digital</a>
         </div>
     </div>

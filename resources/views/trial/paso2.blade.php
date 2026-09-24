@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmar datos — POS Ferretero</title>
+    <title>Confirmar datos — POS Topping</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -114,7 +114,7 @@
 <div class="container">
 
     <div class="logo">
-        <img src="/images/logo-pos-ferretero.png" alt="POS Ferretero">
+        <img src="/images/logo-pos-ferretero.png" alt="POS Topping">
     </div>
 
     <div class="pasos">

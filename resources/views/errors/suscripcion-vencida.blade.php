@@ -30,7 +30,7 @@
             Contactar Avanzas Digital
         </a>
         <div class="footer">
-            Sistema POS Ferretero desarrollado por
+            Sistema POS Topping desarrollado por
             <a href="https://www.avanzas.digital/index.html" target="_blank">Avanzas Digital</a>
         </div>
     </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Ferretero — Avanzas Digital</title>
+    <title>POS Topping — Avanzas Digital</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -310,7 +310,7 @@
 
         <div class="logo-container">
             <img src="/images/logo-pos-ferretero.png"
-                 alt="POS Ferretero"
+                 alt="POS Topping"
                  style="width:260px;max-width:100%;">
         </div>
 
@@ -372,7 +372,7 @@
 
         <div class="video-titulo">
             El POS mas simple para<br>
-            <span>ferreterias de barrio</span>
+            <span>heladerías y negocios de postres</span>
         </div>
 
         <div class="video-subtitulo">

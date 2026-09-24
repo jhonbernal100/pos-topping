@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planes y Precios — POS Ferretero</title>
+    <title>Planes y Precios — POS Topping</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -315,7 +315,7 @@
 
 <!-- NAVBAR -->
 <nav class="navbar">
-    <a href="/" class="navbar-brand">POS Ferretero</a>
+    <a href="/" class="navbar-brand">POS Topping</a>
     <div class="navbar-links">
         <a href="/login" class="btn-login">Iniciar sesion</a>
         <a href="/trial" class="btn-demo">Solicitar demo gratis</a>
@@ -326,7 +326,7 @@
 <div class="hero">
     <h1>Planes simples, sin sorpresas</h1>
     <p>
-        Digitaliza tu ferreteria con el sistema POS mas completo de Colombia.
+        Digitaliza tu negocio con el sistema POS mas completo de Colombia.
         Empieza gratis y escala cuando lo necesites.
     </p>
     <span class="badge-ahorro">Plan anual — ahorra $120,000 COP vs trimestral</span>
@@ -394,7 +394,7 @@
             <li><span class="check">+</span> Actualizaciones sin costo</li>
             <li><span class="check">+</span> Renovacion automatica</li>
         </ul>
-        <a href="https://wa.me/573125625170?text=Hola,%20quiero%20activar%20el%20plan%20Trimestral%20de%20POS%20Ferretero"
+        <a href="https://wa.me/573125625170?text=Hola,%20quiero%20activar%20el%20plan%20Trimestral%20de%20POS%20Topping"
            target="_blank" class="btn-plan btn-trimestral">
             Activar plan trimestral
         </a>
@@ -424,7 +424,7 @@
             <li><span class="check">+</span> Actualizaciones sin costo</li>
             <li><span class="check">+</span> Ahorro de $120,000 vs trimestral</li>
         </ul>
-        <a href="https://wa.me/573125625170?text=Hola,%20quiero%20activar%20el%20plan%20Anual%20de%20POS%20Ferretero"
+        <a href="https://wa.me/573125625170?text=Hola,%20quiero%20activar%20el%20plan%20Anual%20de%20POS%20Topping"
            target="_blank" class="btn-plan btn-anual">
             Activar plan anual
         </a>
@@ -559,7 +559,7 @@
 
     <div class="faq-item">
         <h4>Mis datos estan seguros?</h4>
-        <p>Si. Cada ferreteria tiene sus datos completamente aislados. Utilizamos cifrado SSL y copias de seguridad automaticas diarias. Ningun negocio puede ver los datos de otro.</p>
+        <p>Si. Cada negocio tiene sus datos completamente aislados. Utilizamos cifrado SSL y copias de seguridad automaticas diarias. Ningun negocio puede ver los datos de otro.</p>
     </div>
 
     <div class="faq-item">
@@ -570,11 +570,11 @@
 
 <!-- CTA FINAL -->
 <div class="cta-final">
-    <h2>Listo para modernizar tu ferreteria?</h2>
+    <h2>Listo para modernizar tu negocio?</h2>
     <p>Empieza hoy con 30 dias gratis. Sin tarjeta, sin compromisos.</p>
     <div class="cta-btns">
         <a href="/trial" class="cta-btn-primary">Solicitar demo gratis</a>
-        <a href="https://wa.me/573125625170?text=Hola,%20quiero%20informacion%20sobre%20POS%20Ferretero"
+        <a href="https://wa.me/573125625170?text=Hola,%20quiero%20informacion%20sobre%20POS%20Topping"
            target="_blank" class="cta-btn-secondary">
             Hablar con un asesor
         </a>
@@ -583,7 +583,7 @@
 
 <!-- FOOTER -->
 <div class="footer">
-    POS Ferretero por
+    POS Topping por
     <a href="https://www.avanzas.digital/index.html" target="_blank">Avanzas Digital</a>
     &nbsp;·&nbsp; Bogota, Colombia &nbsp;·&nbsp;
     <a href="/login">Iniciar sesion</a>

@@ -36,7 +36,7 @@
         @endif
 
         <div style="background:#f5f5f5;border-radius:10px;padding:20px;margin-bottom:20px;text-align:left;">
-            <div style="font-size:14px;color:#555;margin-bottom:8px;">Ferretería: <strong>{{ $tenant->nombre }}</strong></div>
+            <div style="font-size:14px;color:#555;margin-bottom:8px;">Negocio: <strong>{{ $tenant->nombre }}</strong></div>
             <div style="font-size:14px;color:#555;margin-bottom:8px;">Plan: <strong>{{ ucfirst($tenant->plan) }}</strong></div>
             <div style="font-size:14px;color:#555;">NIT: <strong>{{ $tenant->nit }}</strong></div>
         </div>

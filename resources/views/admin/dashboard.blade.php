@@ -241,7 +241,7 @@
 <div class="container">
 
     <div class="page-title">
-        Dashboard de Ferreterias
+        Dashboard de Negocios
         <button onclick="document.getElementById('modal-masivo').classList.add('activo')"
             style="margin-left:auto;padding:8px 20px;background:#99CF8E;color:#000;
                    border:none;border-radius:8px;font-size:13px;font-weight:bold;cursor:pointer;">
@@ -253,7 +253,7 @@
     <div class="metricas">
         <div class="metrica-card">
             <div class="valor">{{ $totalFerreterias }}</div>
-            <div class="label">Total ferreterias</div>
+            <div class="label">Total negocios</div>
         </div>
         <div class="metrica-card">
             <div class="valor" style="color:#856404;">{{ $ferreteriasTrial }}</div>
@@ -297,9 +297,9 @@
     {{-- TABLA DE FERRETERIAS --}}
     <div class="seccion">
         <div class="seccion-header">
-            <h2>Todas las ferreterias ({{ $ferreterias->count() }})</h2>
+            <h2>Todos los negocios ({{ $ferreterias->count() }})</h2>
             <input type="text" class="buscador" id="buscador"
-                   placeholder="Buscar ferreteria..."
+                   placeholder="Buscar negocio..."
                    oninput="filtrar(this.value)">
         </div>
         <div style="overflow-x:auto;">
@@ -307,7 +307,7 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Ferreteria</th>
+                    <th>Negocio</th>
                     <th>NIT</th>
                     <th>Ciudad</th>
                     <th>Estado</th>
@@ -391,7 +391,7 @@
                 @empty
                 <tr>
                     <td colspan="11" style="text-align:center;padding:24px;color:#999;">
-                        No hay ferreterias registradas
+                        No hay negocios registrados
                     </td>
                 </tr>
                 @endforelse
@@ -481,12 +481,12 @@
     <div class="modal" style="width:500px;">
         <h3>Mensaje masivo</h3>
         <p style="font-size:13px;color:#888;margin-bottom:16px;">
-            Envia un mensaje a multiples ferreterias a la vez.
+            Envia un mensaje a múltiples negocios a la vez.
         </p>
         <div class="modal-campo">
             <label>Enviar a</label>
             <select id="input-filtro-masivo">
-                <option value="todas">Todas las ferreterias</option>
+                <option value="todas">Todos los negocios</option>
                 <option value="trial">Solo en trial</option>
                 <option value="activa">Solo activas (pago)</option>
                 <option value="vencida">Solo vencidas</option>

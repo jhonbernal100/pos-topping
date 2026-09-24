@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solicitar Demo — POS Ferretero</title>
+    <title>Solicitar Demo — POS Topping</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -136,7 +136,7 @@
 <div class="container">
 
     <div class="logo">
-        <img src="/images/logo-pos-ferretero.png" alt="POS Ferretero">
+        <img src="/images/logo-pos-ferretero.png" alt="POS Topping">
     </div>
 
     <div class="pasos">
@@ -157,7 +157,7 @@
     </div>
 
     <h2>Solicita tu demo gratis</h2>
-    <p class="subtitulo">Toma una foto de tu RUT y la IA extraera los datos de tu ferreteria automaticamente</p>
+    <p class="subtitulo">Toma una foto de tu RUT y la IA extraera los datos de tu negocio automáticamente</p>
 
     <img id="preview-rut" src="" alt="Vista previa RUT">
 

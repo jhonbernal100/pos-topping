@@ -24,7 +24,7 @@ class ProductoResource extends Resource
         return $form->schema([
             Forms\Components\Section::make('Información del producto')->schema([
                 Forms\Components\Select::make('tenant_id')
-                    ->label('Ferretería')
+                    ->label('Negocio')
                     ->options(Tenant::where('activo', true)->pluck('nombre', 'id'))
                     ->required()->searchable(),
                 Forms\Components\TextInput::make('nombre')
@@ -77,7 +77,7 @@ class ProductoResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('tenant.nombre')
-                    ->label('Ferretería')->searchable()->sortable(),
+                    ->label('Negocio')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('nombre')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('categoria')->badge(),
                 Tables\Columns\TextColumn::make('precio_venta')
@@ -93,7 +93,7 @@ class ProductoResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('tenant_id')
-                    ->label('Ferretería')
+                    ->label('Negocio')
                     ->options(Tenant::pluck('nombre', 'id')),
                 Tables\Filters\SelectFilter::make('categoria')
                     ->options([

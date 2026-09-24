@@ -45,15 +45,15 @@ class UsuarioController extends Controller
 
         Mail::raw(
             "Hola {$request->name},\n\n" .
-            "El administrador de " . auth()->user()->tenant->nombre . " te ha creado una cuenta en POS Ferretero.\n\n" .
-            "Accede en: https://pos-ferretero.avanzas.digital/login\n" .
+            "El administrador de " . auth()->user()->tenant->nombre . " te ha creado una cuenta en POS Topping.\n\n" .
+            "Accede en: https://pos-topping.avanzas.digital/login\n" .
             "Usuario: {$request->email}\n" .
             "Contrasena temporal: {$password}\n\n" .
             "Te recomendamos cambiar tu contrasena al ingresar.\n\n" .
             "Avanzas Digital - Tu exito es nuestro objetivo",
             function ($message) use ($request) {
                 $message->to($request->email)
-                        ->subject('Acceso a POS Ferretero - ' . auth()->user()->tenant->nombre);
+                        ->subject('Acceso a POS Topping - ' . auth()->user()->tenant->nombre);
             }
         );
 

@@ -24,7 +24,7 @@ class VentaResource extends Resource
         return $form->schema([
             Forms\Components\Section::make('Información de la venta')->schema([
                 Forms\Components\Select::make('tenant_id')
-                    ->label('Ferretería')
+                    ->label('Negocio')
                     ->options(Tenant::where('activo', true)->pluck('nombre', 'id'))
                     ->required(),
                 Forms\Components\Select::make('estado')
@@ -42,7 +42,7 @@ class VentaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('tenant.nombre')
-                    ->label('Ferretería')->searchable()->sortable(),
+                    ->label('Negocio')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('id')
                     ->label('#')
                     ->formatStateUsing(fn($state) => str_pad($state, 6, '0', STR_PAD_LEFT)),
@@ -63,7 +63,7 @@ class VentaResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('tenant_id')
-                    ->label('Ferretería')
+                    ->label('Negocio')
                     ->options(Tenant::pluck('nombre', 'id')),
                 Tables\Filters\SelectFilter::make('estado')
                     ->options([

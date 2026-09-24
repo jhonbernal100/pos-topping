@@ -151,14 +151,14 @@ Devuélveme ÚNICAMENTE un JSON válido con esta estructura, sin texto adicional
 
             Mail::raw(
                 "Hola {$request->nombre_representante},\n\n" .
-                "Tu codigo de verificacion para activar el demo de POS Ferretero es:\n\n" .
+                "Tu codigo de verificacion para activar el demo de POS Topping es:\n\n" .
                 "{$codigo}\n\n" .
                 "Este codigo expira en 30 minutos.\n\n" .
                 "Si no solicitaste este acceso ignora este mensaje.\n\n" .
                 "Avanzas Digital - Tu exito es nuestro objetivo",
                 function ($message) use ($request) {
                     $message->to($request->email)
-                            ->subject('Codigo de verificacion - POS Ferretero');
+                            ->subject('Codigo de verificacion - POS Topping');
                 }
             );
 
@@ -188,14 +188,14 @@ Devuélveme ÚNICAMENTE un JSON válido con esta estructura, sin texto adicional
 
         Mail::raw(
             "Hola {$request->nombre_representante},\n\n" .
-            "Tu codigo de verificacion para activar el demo de POS Ferretero es:\n\n" .
+            "Tu codigo de verificacion para activar el demo de POS Topping es:\n\n" .
             "{$codigo}\n\n" .
             "Este codigo expira en 30 minutos.\n\n" .
             "Si no solicitaste este acceso ignora este mensaje.\n\n" .
             "Avanzas Digital - Tu exito es nuestro objetivo",
             function ($message) use ($request) {
                 $message->to($request->email)
-                        ->subject('Codigo de verificacion - POS Ferretero');
+                        ->subject('Codigo de verificacion - POS Topping');
             }
         );
 
@@ -289,10 +289,10 @@ Devuélveme ÚNICAMENTE un JSON válido con esta estructura, sin texto adicional
 
             // Enviar credenciales
             Mail::raw(
-                "Bienvenido a POS Ferretero!\n\n" .
+                "Bienvenido a POS Topping!\n\n" .
                 "Hola {$trial->nombre_representante},\n\n" .
                 "Tu cuenta ha sido activada exitosamente. Tienes 30 dias de prueba gratuita.\n\n" .
-                "Accede en: https://pos-ferretero.avanzas.digital/login\n" .
+                "Accede en: https://pos-topping.avanzas.digital/login\n" .
                 "Usuario: {$trial->email}\n" .
                 "Contrasena temporal: {$password}\n\n" .
                 "Te recomendamos cambiar tu contrasena al ingresar por primera vez.\n\n" .
@@ -300,7 +300,7 @@ Devuélveme ÚNICAMENTE un JSON válido con esta estructura, sin texto adicional
                 "Avanzas Digital - Tu exito es nuestro objetivo",
                 function ($message) use ($trial) {
                     $message->to($trial->email)
-                            ->subject('Bienvenido a POS Ferretero! - Tus credenciales de acceso');
+                            ->subject('Bienvenido a POS Topping! - Tus credenciales de acceso');
                 }
             );
 
@@ -336,7 +336,7 @@ Devuélveme ÚNICAMENTE un JSON válido con esta estructura, sin texto adicional
             "Tu nuevo codigo de verificacion es:\n\n{$codigo}\n\nExpira en 30 minutos.\n\nAvanzas Digital",
             function ($message) use ($trial) {
                 $message->to($trial->email)
-                        ->subject('Nuevo codigo de verificacion - POS Ferretero');
+                        ->subject('Nuevo codigo de verificacion - POS Topping');
             }
         );
 

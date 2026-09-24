@@ -154,7 +154,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'mensaje' => 'Ferreteria eliminada correctamente',
+            'mensaje' => 'Negocio eliminado correctamente',
         ]);
     }
 }
