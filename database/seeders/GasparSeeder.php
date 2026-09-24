@@ -29,8 +29,8 @@ class GasparSeeder extends Seeder
             ]
         );
 
-        // Sedes
-        $sede1 = Sede::firstOrCreate(
+        // Sedes (se crean o se actualizan con estos datos; las coordenadas no se tocan)
+        $sede1 = Sede::updateOrCreate(
             ['tenant_id' => $tenant->id, 'nombre' => 'Camelia'],
             [
                 'direccion'         => 'Carrera 53D Bis No. 2-06',
@@ -42,51 +42,53 @@ class GasparSeeder extends Seeder
             ]
         );
 
-        $sede2 = Sede::firstOrCreate(
+        $sede2 = Sede::updateOrCreate(
             ['tenant_id' => $tenant->id, 'nombre' => 'Diagonal 48 Sur'],
             [
                 'direccion'         => 'Diagonal 48 Sur No. 53-95',
-                'barrio'            => null,
+                'barrio'            => 'Venecia',
                 'ciudad'            => 'Bogotá',
-                'telefono'          => null,
+                'telefono'          => '3106631824',
                 'acepta_domicilios' => true,
                 'activo'            => true,
             ]
         );
 
-        // Gerentes (rol dueno + sede asignada)
-        $gerentes = [
-            ['name' => 'Hector Varon', 'email' => 'hectorcastro1607@gmail.com', 'sede' => $sede1],
-            ['name' => 'Carolina',     'email' => 'carol07_06@hotmail.com',     'sede' => $sede2],
+        // Usuarios: sede null = propietario (ve todas las sedes)
+        $usuarios = [
+            ['name' => 'Hector Varon', 'email' => 'hectorcastro1607@gmail.com', 'sede' => null],   // propietario
+            ['name' => 'Carolina',     'email' => 'carol07_06@hotmail.com',     'sede' => $sede2], // gerente Venecia
         ];
 
         $credenciales = [];
 
-        foreach ($gerentes as $g) {
-            if (User::where('email', $g['email'])->exists()) {
-                $credenciales[] = [$g['name'], $g['email'], $g['sede']->nombre, '(ya existia, sin cambios)'];
+        foreach ($usuarios as $u) {
+            $alcance = $u['sede']?->nombre ?? 'Todas (propietario)';
+
+            if (User::where('email', $u['email'])->exists()) {
+                $credenciales[] = [$u['name'], $u['email'], $alcance, '(ya existia, sin cambios)'];
                 continue;
             }
 
             $password = Str::random(10);
 
             User::create([
-                'name'              => $g['name'],
-                'email'             => $g['email'],
+                'name'              => $u['name'],
+                'email'             => $u['email'],
                 'password'          => Hash::make($password),
                 'tenant_id'         => $tenant->id,
-                'sede_id'           => $g['sede']->id,
+                'sede_id'           => $u['sede']?->id,
                 'rol'               => 'dueno',
                 'activo'            => true,
                 'email_verified_at' => now(),
             ]);
 
-            $credenciales[] = [$g['name'], $g['email'], $g['sede']->nombre, $password];
+            $credenciales[] = [$u['name'], $u['email'], $alcance, $password];
         }
 
         $this->command->info("Negocio: {$tenant->nombre} (ID {$tenant->id})");
         $this->command->info('Demo vence: ' . $tenant->trial_ends_at->format('d/m/Y'));
-        $this->command->table(['Gerente', 'Correo', 'Sede', 'Contrasena temporal'], $credenciales);
+        $this->command->table(['Usuario', 'Correo', 'Sede', 'Contrasena temporal'], $credenciales);
         $this->command->warn('Entrega estas contrasenas en privado. No las pegues en el chat.');
     }
 }
