@@ -25,6 +25,11 @@ class Tenant extends Model
         'subscription_price'      => 'integer',
     ];
 
+    // Límites de la demo de 30 días (null = ilimitado en planes pagos)
+    public const TRIAL_MAX_SEDES             = 2;
+    public const TRIAL_MAX_USUARIOS_POR_SEDE = 2;
+    public const TRIAL_MAX_PRODUCTOS         = 250;
+
     public function tieneAcceso(): bool
     {
         return match($this->subscription_status) {
@@ -44,9 +49,36 @@ class Tenant extends Model
         return max(0, (int) now()->diffInDays($fecha, false));
     }
 
+    public function esTrial(): bool
+    {
+        return $this->subscription_status === 'trial';
+    }
+
+    public function limiteSedes(): ?int
+    {
+        return $this->esTrial() ? self::TRIAL_MAX_SEDES : null;
+    }
+
+    public function limiteUsuariosPorSede(): ?int
+    {
+        return $this->esTrial() ? self::TRIAL_MAX_USUARIOS_POR_SEDE : null;
+    }
+
+    public function limiteProductos(): ?int
+    {
+        return $this->esTrial() ? self::TRIAL_MAX_PRODUCTOS : null;
+    }
+
+    public function puedeCrearSede(): bool
+    {
+        $limite = $this->limiteSedes();
+        return $limite === null || $this->sedes()->count() < $limite;
+    }
+
     public function productos()   { return $this->hasMany(Producto::class); }
     public function clientes()    { return $this->hasMany(Cliente::class); }
     public function proveedores() { return $this->hasMany(Proveedor::class); }
     public function ventas()      { return $this->hasMany(Venta::class); }
     public function usuarios()    { return $this->hasMany(User::class); }
+    public function sedes()       { return $this->hasMany(Sede::class); }
 }

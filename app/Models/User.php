@@ -17,6 +17,7 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'tenant_id',
+        'sede_id',
         'rol',
         'activo',
     ];
@@ -42,8 +43,38 @@ class User extends Authenticatable implements FilamentUser
     public function esDueno(): bool      { return $this->rol === 'dueno'; }
     public function esAuxiliar(): bool   { return $this->rol === 'auxiliar'; }
 
+    // Dueño sin sede = propietario del negocio, ve todas las sedes
+    public function esPropietario(): bool
+    {
+        return $this->rol === 'dueno' && is_null($this->sede_id);
+    }
+
+    // Dueño con sede = gerente de ese punto de venta
+    public function esGerenteSede(): bool
+    {
+        return $this->rol === 'dueno' && !is_null($this->sede_id);
+    }
+
+    // IDs de sedes que este usuario puede ver y operar
+    public function sedesPermitidasIds(): array
+    {
+        if ($this->esPropietario()) {
+            return Sede::where('tenant_id', $this->tenant_id)
+                ->where('activo', true)
+                ->pluck('id')
+                ->all();
+        }
+
+        return $this->sede_id ? [$this->sede_id] : [];
+    }
+
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function sede()
+    {
+        return $this->belongsTo(Sede::class);
     }
 }
