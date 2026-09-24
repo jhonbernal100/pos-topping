@@ -11,8 +11,14 @@ class IdentifyTenant
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Rutas del admin y trial no requieren tenant
-        if ($request->is('admin*') || $request->is('trial*') || $request->is('planes*')) {
+        // Rutas públicas y de acceso que no requieren tenant
+        if (
+            $request->is('admin*') ||
+            $request->is('trial*') ||
+            $request->is('planes*') ||
+            $request->is('login') ||
+            $request->is('logout')
+        ) {
             return $next($request);
         }
 
@@ -41,7 +47,7 @@ class IdentifyTenant
 
             // Usuario autenticado sin acceso
             return response()->view('errors.suscripcion-vencida', [
-                'tenant' => $user->tenant ?? new Tenant(['nombre' => 'tu ferreteria'])
+                'tenant' => $user->tenant ?? new Tenant(['nombre' => 'tu negocio'])
             ], 403);
         }
 
