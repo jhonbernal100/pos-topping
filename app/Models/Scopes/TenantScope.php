@@ -11,7 +11,8 @@ class TenantScope implements Scope
     public function apply(Builder $builder, Model $model): void
     {
         if (session()->has('tenant_id')) {
-            $builder->where('tenant_id', session('tenant_id'));
+            // qualifyColumn evita "columna ambigua" cuando la consulta une varias tablas con tenant_id
+            $builder->where($model->qualifyColumn('tenant_id'), session('tenant_id'));
         }
     }
 }
