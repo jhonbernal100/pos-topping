@@ -41,6 +41,7 @@ class IdentifyTenant
                 if ($tenant && $tenant->activo && $tenant->tieneAcceso()) {
                     session(['tenant_id' => $tenant->id]);
                     config(['app.current_tenant_id' => $tenant->id]);
+                    $this->resolverSedeActiva($user);
                     return $next($request);
                 }
             }
@@ -59,6 +60,29 @@ class IdentifyTenant
             return $next($request);
         }
 
-        return response()->view('errors.sin-tenant', [], 403);
+        // Sin tenants registrados — dejar que auth redirija al login
+        return $next($request);
+    }
+
+    // Fija la sede con la que trabaja el usuario en esta sesión
+    private function resolverSedeActiva($user): void
+    {
+        // Gerentes y auxiliares: siempre su propia sede
+        if ($user->sede_id) {
+            session(['sede_id' => (int) $user->sede_id]);
+            config(['app.current_sede_id' => (int) $user->sede_id]);
+            return;
+        }
+
+        // Propietario: conserva la sede elegida si sigue siendo válida
+        $permitidas = array_map('intval', $user->sedesPermitidasIds());
+        $actual     = (int) session('sede_id');
+
+        if (!in_array($actual, $permitidas, true)) {
+            $actual = $permitidas[0] ?? 0;
+            session(['sede_id' => $actual ?: null]);
+        }
+
+        config(['app.current_sede_id' => $actual ?: null]);
     }
 }

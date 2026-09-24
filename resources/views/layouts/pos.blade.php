@@ -25,8 +25,9 @@
 
         .navbar-brand { font-size: 18px; font-weight: bold; color: #fff; text-decoration: none; }
         .navbar-right  { display: flex; align-items: center; gap: 16px; }
-        .navbar-user { font-size: 12px; color: #aaa; text-align: right; }
+        .navbar-user { font-size: 12px; color: #aaa; text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
         .navbar-user span { display: block; color: #fff; font-size: 14px; }
+        .navbar-rol { color: #888; font-size: 11px; }
 
         .toolbar {
             background: #111;
@@ -192,16 +193,26 @@
 </head>
 <body>
 
+    @php
+        $usuarioActual = auth()->user();
+        $rolVisible = match (true) {
+            $usuarioActual->esSuperAdmin()  => 'Superadmin',
+            $usuarioActual->esPropietario() => 'Propietario',
+            $usuarioActual->esGerenteSede() => 'Gerente',
+            default                         => 'Auxiliar',
+        };
+    @endphp
+
     <nav class="navbar">
-        <a href="{{ auth()->user()->rol === 'superadmin' ? '/admin/dashboard' : '/ventas/crear' }}"
+        <a href="{{ $usuarioActual->rol === 'superadmin' ? '/admin/dashboard' : '/ventas/crear' }}"
            class="navbar-brand">
             POS Topping
         </a>
 
         <div class="navbar-right">
 
-            {{-- Campanita solo para dueno y auxiliar --}}
-            @if(auth()->user()->rol !== 'superadmin')
+            {{-- Campanita solo para usuarios de negocio --}}
+            @if($usuarioActual->rol !== 'superadmin')
             <div class="campana-wrapper" onclick="toggleMensajes()">
                 <div class="campana-icono">🔔</div>
                 <span class="campana-badge" id="campana-badge">0</span>
@@ -227,8 +238,12 @@
             @endif
 
             <div class="navbar-user">
-                {{ auth()->user()->name ?? 'Usuario' }}
-                <span>{{ auth()->user()->tenant->nombre ?? 'Avanzas Digital' }}</span>
+                <div>
+                    {{ $usuarioActual->name ?? 'Usuario' }}
+                    <span class="navbar-rol" style="display:inline;">· {{ $rolVisible }}</span>
+                </div>
+                <span>{{ $usuarioActual->tenant->nombre ?? 'Avanzas Digital' }}</span>
+                @include('partials.sede-activa')
             </div>
 
         </div>
@@ -237,14 +252,14 @@
     <div class="toolbar">
 
         {{-- SUPERADMIN: solo ve Panel Admin --}}
-        @if(auth()->user()->rol === 'superadmin')
+        @if($usuarioActual->rol === 'superadmin')
             <a href="/admin/dashboard"
                class="{{ request()->is('admin*') ? 'activo' : '' }}"
                style="background:#99CF8E;color:#000;font-weight:bold;border-color:#99CF8E;">
                 Panel Admin
             </a>
 
-        {{-- DUENO Y AUXILIAR: menu completo --}}
+        {{-- USUARIOS DEL NEGOCIO --}}
         @else
             <a href="/ventas/crear"
                class="{{ request()->is('ventas/crear') ? 'activo' : '' }}">
@@ -271,8 +286,8 @@
                 Clientes
             </a>
 
-            {{-- Solo dueno --}}
-            @if(auth()->user()->rol === 'dueno')
+            {{-- Propietario y gerentes de sede --}}
+            @if($usuarioActual->rol === 'dueno')
                 <a href="/inventario"
                    class="{{ request()->is('inventario') && !request()->is('inventario/capturar') && !request()->is('inventario/crear-manual') ? 'activo' : '' }}">
                     Inventario
@@ -293,6 +308,10 @@
                    class="{{ request()->is('reportes*') ? 'activo' : '' }}">
                     Reportes
                 </a>
+            @endif
+
+            {{-- Solo propietario --}}
+            @if($usuarioActual->esPropietario())
                 <a href="/ferreteria/perfil"
                    class="{{ request()->is('ferreteria/perfil') ? 'activo' : '' }}">
                     Mi negocio
@@ -315,12 +334,16 @@
     </div>
 
     @auth
-    @if(auth()->user()->tenant && auth()->user()->tenant->subscription_status === 'trial')
-        @php $dias = auth()->user()->tenant->diasRestantes(); @endphp
+    @if($usuarioActual->tenant && $usuarioActual->tenant->subscription_status === 'trial')
+        @php $dias = $usuarioActual->tenant->diasRestantes(); @endphp
         @if($dias <= 7)
         <div class="alerta-trial">
             Tu periodo de prueba vence en <strong>{{ $dias }} dias</strong>.
-            <a href="/ferreteria/suscripcion">Contacta a Avanzas Digital para continuar</a>
+            @if($usuarioActual->esPropietario())
+                <a href="/ferreteria/suscripcion">Contacta a Avanzas Digital para continuar</a>
+            @else
+                Informa al propietario del negocio.
+            @endif
         </div>
         @endif
     @endif
@@ -340,7 +363,7 @@
     @yield('scripts')
 
     {{-- Sistema de mensajes campanita --}}
-    @if(auth()->user()->rol !== 'superadmin')
+    @if($usuarioActual->rol !== 'superadmin')
     <script>
     let mensajesAbierto = false;
 

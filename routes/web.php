@@ -13,8 +13,10 @@ use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\PlanesController;
+use App\Http\Controllers\SedeActivaController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MensajeController;
+use App\Http\Middleware\EnsureSuperAdmin;
 
 Route::get('/', fn() => redirect('/login'));
 
@@ -33,12 +35,14 @@ Route::prefix('trial')->group(function () {
     Route::get('/paso3',            fn() => view('trial.paso3'))->name('trial.paso3');
 });
 
-
 Route::get('/planes', [PlanesController::class, 'index'])->name('planes.index');
 
 Route::middleware('auth')->group(function () {
     Route::get('/mensajes/no-leidos',  [MensajeController::class, 'noLeidos'])->name('mensajes.noLeidos');
     Route::post('/mensajes/leer',      [MensajeController::class, 'marcarLeido'])->name('mensajes.leer');
+
+    // Cambio de sede activa (solo propietario)
+    Route::post('/sede-activa', [SedeActivaController::class, 'cambiar'])->name('sede.cambiar');
 
     Route::prefix('ventas')->group(function () {
         Route::get('/',                     [VentaController::class, 'index'])->name('ventas.index');
@@ -118,7 +122,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{usuario}/eliminar',    [UsuarioController::class, 'eliminar'])->name('usuarios.eliminar');
     });
 
-    Route::prefix('admin')->middleware('auth')->group(function () {
+    // Panel Avanzas Digital — solo superadmin
+    Route::prefix('admin')->middleware(EnsureSuperAdmin::class)->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
         Route::get('/ferreterias/{tenant}', [DashboardController::class, 'ferreteria'])->name('admin.ferreteria');
         Route::post('/ferreterias/{tenant}/ampliar-trial', [DashboardController::class, 'ampliarTrial'])->name('admin.ampliarTrial');
@@ -127,6 +132,4 @@ Route::middleware('auth')->group(function () {
         Route::post('/mensajes/enviar',        [MensajeController::class, 'enviar'])->name('admin.mensajes.enviar');
         Route::post('/mensajes/masivo',        [MensajeController::class, 'enviarMasivo'])->name('admin.mensajes.masivo');
     });
-
-
 });
