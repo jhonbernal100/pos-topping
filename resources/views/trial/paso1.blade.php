@@ -136,7 +136,7 @@
 <div class="container">
 
     <div class="logo">
-        <img src="/images/logo-pos-ferretero.png" alt="POS Topping">
+        <img src="/images/logo-pos-topping.png" alt="POS Topping">
     </div>
 
     <div class="pasos">

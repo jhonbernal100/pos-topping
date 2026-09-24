@@ -309,7 +309,7 @@
     <div class="panel-login">
 
         <div class="logo-container">
-            <img src="/images/logo-pos-ferretero.png"
+            <img src="/images/logo-pos-topping.png"
                  alt="POS Topping"
                  style="width:260px;max-width:100%;">
         </div>
