@@ -14,6 +14,7 @@ use App\Http\Controllers\GastoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\PlanesController;
 use App\Http\Controllers\SedeActivaController;
+use App\Http\Controllers\MenuController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MensajeController;
 use App\Http\Middleware\EnsureSuperAdmin;
@@ -23,6 +24,14 @@ Route::get('/', fn() => redirect('/login'));
 Route::get('/login',   [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login',  [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Si el navegador llega a /logout por GET (recarga, botón atrás), cerrar sesión y enviar al login
+Route::get('/logout', function () {
+    auth()->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/login');
+});
 
 // Rutas públicas — registro trial
 Route::prefix('trial')->group(function () {
@@ -120,6 +129,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/{usuario}/actualizar',    [UsuarioController::class, 'actualizar'])->name('usuarios.actualizar');
         Route::post('/{usuario}/toggle-activo', [UsuarioController::class, 'toggleActivo'])->name('usuarios.toggleActivo');
         Route::delete('/{usuario}/eliminar',    [UsuarioController::class, 'eliminar'])->name('usuarios.eliminar');
+    });
+
+    // Menú (solo propietario — validado en MenuController)
+    Route::prefix('menu')->group(function () {
+        Route::get('/',                                    [MenuController::class, 'index'])->name('menu.index');
+        Route::post('/productos/{producto}/toggle',        [MenuController::class, 'toggleProducto'])->name('menu.toggleProducto');
+        Route::post('/modificadores/{modificador}/toggle', [MenuController::class, 'toggleModificador'])->name('menu.toggleModificador');
     });
 
     // Panel Avanzas Digital — solo superadmin

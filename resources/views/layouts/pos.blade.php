@@ -312,6 +312,10 @@
 
             {{-- Solo propietario --}}
             @if($usuarioActual->esPropietario())
+                <a href="/menu"
+                   class="{{ request()->is('menu*') ? 'activo' : '' }}">
+                    Menú
+                </a>
                 <a href="/ferreteria/perfil"
                    class="{{ request()->is('ferreteria/perfil') ? 'activo' : '' }}">
                     Mi negocio
