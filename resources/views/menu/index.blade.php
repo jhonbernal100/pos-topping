@@ -9,11 +9,17 @@
 @endphp
 
 <div style="padding:16px;max-width:1100px;margin:0 auto;">
-    <div style="margin-bottom:16px;">
-        <h1 style="font-size:22px;">Menú</h1>
-        <p style="font-size:13px;color:#888;margin-top:4px;">
-            Los cambios aplican a todas las sedes. Toca "Disponible" para ocultar un producto de la caja.
-        </p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+        <div>
+            <h1 style="font-size:22px;">Menú</h1>
+            <p style="font-size:13px;color:#888;margin-top:4px;">
+                Los cambios aplican a todas las sedes. Toca "Disponible" para ocultar un producto de la caja.
+            </p>
+        </div>
+        <a href="/menu/productos/crear"
+           style="padding:10px 20px;background:#000;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;white-space:nowrap;">
+            + Nuevo producto
+        </a>
     </div>
 
     <div id="mensaje" style="display:none;padding:10px;border-radius:8px;margin-bottom:12px;font-size:14px;"></div>
@@ -70,6 +76,11 @@
                                 Solo en el local
                             </span>
                         @endif
+                        @if(!$producto->disponible_local)
+                            <span style="padding:2px 8px;border-radius:10px;font-size:11px;background:#f0f0f0;color:#555;">
+                                Solo a domicilio
+                            </span>
+                        @endif
                         @if($producto->tipo_menu === 'reventa')
                             <span style="padding:2px 8px;border-radius:10px;font-size:11px;background:#e7f1ff;color:#0c447c;">
                                 Reventa · stock {{ $producto->stock }}
@@ -98,6 +109,11 @@
                             @endforeach
                         </div>
                     @endif
+
+                    <a href="/menu/productos/{{ $producto->id }}/editar"
+                       style="margin-top:auto;padding:8px;text-align:center;background:#000;color:#fff;border-radius:8px;font-size:13px;text-decoration:none;">
+                        Editar
+                    </a>
                 </div>
             @empty
                 <div style="color:#999;font-size:13px;">Sin productos en esta categoría.</div>

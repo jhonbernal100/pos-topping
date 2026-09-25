@@ -148,4 +148,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/mensajes/enviar',        [MensajeController::class, 'enviar'])->name('admin.mensajes.enviar');
         Route::post('/mensajes/masivo',        [MensajeController::class, 'enviarMasivo'])->name('admin.mensajes.masivo');
     });
+
+    // Menú (solo propietario — validado en MenuController)
+    Route::prefix('menu')->group(function () {
+        Route::get('/',                                    [MenuController::class, 'index'])->name('menu.index');
+        Route::get('/productos/crear',                     [MenuController::class, 'crear'])->name('menu.crear');
+        Route::post('/productos',                          [MenuController::class, 'store'])->name('menu.store');
+        Route::get('/productos/{producto}/editar',         [MenuController::class, 'editar'])->name('menu.editar');
+        Route::post('/productos/{producto}/actualizar',    [MenuController::class, 'actualizar'])->name('menu.actualizar');
+        Route::post('/productos/{producto}/toggle',        [MenuController::class, 'toggleProducto'])->name('menu.toggleProducto');
+        Route::post('/modificadores/{modificador}/toggle', [MenuController::class, 'toggleModificador'])->name('menu.toggleModificador');
+    });
 });
