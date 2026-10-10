@@ -37,8 +37,8 @@
             display:flex; flex-direction:column; font-family:inherit; box-shadow:0 2px 8px rgba(0,0,0,.06); transition:transform .12s; }
     .prod:active { transform:scale(.97); }
     .prod:disabled { cursor:not-allowed; }
-    .prod-foto { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; background:var(--fondo); }
-    .prod-inicial { width:100%; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
+    .prod-foto { width:100%; height:150px; object-fit:contain; display:block; background:var(--fondo); padding:8px; }
+    .prod-inicial { width:100%; height:150px; display:flex; align-items:center; justify-content:center;
                     background:var(--marca); color:#fff; font-size:46px; font-weight:bold; opacity:.85; }
     .prod-info { padding:10px 12px 12px; display:flex; flex-direction:column; gap:4px; flex:1; }
     .prod-nombre { font-weight:bold; font-size:16px; color:var(--titulo); }
@@ -65,7 +65,7 @@
     .modal { background:#fff; width:100%; max-width:600px; max-height:94vh; overflow-y:auto; border-radius:20px 20px 0 0; }
     @media (min-width: 700px) { .overlay { align-items:center; } .modal { border-radius:20px; } }
     .modal-cuerpo { padding:18px; }
-    .modal-foto { width:100%; max-height:280px; object-fit:contain; display:block; background:var(--fondo); }
+    .modal-foto { width:100%; height:170px; object-fit:contain; display:block; background:var(--fondo); padding:10px; }
 
     .seccion { margin-top:16px; }
     .seccion-titulo { font-size:15px; font-weight:bold; margin-bottom:8px; color:var(--titulo); }
