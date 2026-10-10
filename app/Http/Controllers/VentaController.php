@@ -17,7 +17,7 @@ class VentaController extends Controller
 {
     public function index()
     {
-        $ventas = Venta::with(['sede', 'pagos'])
+        $ventas = Venta::with(['sede', 'pagos'])->withCount('detalles')
             ->where('sede_id', session('sede_id'))
             ->orderByDesc('created_at')
             ->paginate(20);

@@ -271,6 +271,11 @@
                 Ventas
             </a>
 
+            <a href="/cocina"
+               class="{{ request()->is('cocina*') ? 'activo' : '' }}">
+                Cocina
+            </a>
+
             <a href="/inventario/capturar"
                class="{{ request()->is('inventario/capturar') ? 'activo' : '' }}">
                 Agregar inventario

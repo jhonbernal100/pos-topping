@@ -15,6 +15,7 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\PlanesController;
 use App\Http\Controllers\SedeActivaController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\CocinaController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MensajeController;
 use App\Http\Middleware\EnsureSuperAdmin;
@@ -62,6 +63,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/{venta}/ticket-abono', [VentaController::class, 'ticketAbono'])->name('ventas.ticketAbono');
         Route::get('/{venta}/devolucion',   [DevolucionController::class, 'index'])->name('ventas.devolucion');
         Route::post('/{venta}/devolucion',  [DevolucionController::class, 'procesar'])->name('ventas.procesarDevolucion');
+    });
+
+    // Cocina (todos los usuarios del negocio — validado por sede en CocinaController)
+    Route::prefix('cocina')->group(function () {
+        Route::get('/',                [CocinaController::class, 'index'])->name('cocina.index');
+        Route::get('/pedidos',         [CocinaController::class, 'pedidos'])->name('cocina.pedidos');
+        Route::post('/{venta}/estado', [CocinaController::class, 'cambiarEstado'])->name('cocina.estado');
+        Route::get('/{venta}/comanda', [CocinaController::class, 'comanda'])->name('cocina.comanda');
     });
 
     Route::prefix('inventario')->group(function () {
@@ -134,6 +143,10 @@ Route::middleware('auth')->group(function () {
     // Menú (solo propietario — validado en MenuController)
     Route::prefix('menu')->group(function () {
         Route::get('/',                                    [MenuController::class, 'index'])->name('menu.index');
+        Route::get('/productos/crear',                     [MenuController::class, 'crear'])->name('menu.crear');
+        Route::post('/productos',                          [MenuController::class, 'store'])->name('menu.store');
+        Route::get('/productos/{producto}/editar',         [MenuController::class, 'editar'])->name('menu.editar');
+        Route::post('/productos/{producto}/actualizar',    [MenuController::class, 'actualizar'])->name('menu.actualizar');
         Route::post('/productos/{producto}/toggle',        [MenuController::class, 'toggleProducto'])->name('menu.toggleProducto');
         Route::post('/modificadores/{modificador}/toggle', [MenuController::class, 'toggleModificador'])->name('menu.toggleModificador');
     });
@@ -147,16 +160,5 @@ Route::middleware('auth')->group(function () {
         Route::delete('/ferreterias/{tenant}/eliminar', [DashboardController::class, 'eliminarFerreteria'])->name('admin.eliminarFerreteria');
         Route::post('/mensajes/enviar',        [MensajeController::class, 'enviar'])->name('admin.mensajes.enviar');
         Route::post('/mensajes/masivo',        [MensajeController::class, 'enviarMasivo'])->name('admin.mensajes.masivo');
-    });
-
-    // Menú (solo propietario — validado en MenuController)
-    Route::prefix('menu')->group(function () {
-        Route::get('/',                                    [MenuController::class, 'index'])->name('menu.index');
-        Route::get('/productos/crear',                     [MenuController::class, 'crear'])->name('menu.crear');
-        Route::post('/productos',                          [MenuController::class, 'store'])->name('menu.store');
-        Route::get('/productos/{producto}/editar',         [MenuController::class, 'editar'])->name('menu.editar');
-        Route::post('/productos/{producto}/actualizar',    [MenuController::class, 'actualizar'])->name('menu.actualizar');
-        Route::post('/productos/{producto}/toggle',        [MenuController::class, 'toggleProducto'])->name('menu.toggleProducto');
-        Route::post('/modificadores/{modificador}/toggle', [MenuController::class, 'toggleModificador'])->name('menu.toggleModificador');
     });
 });

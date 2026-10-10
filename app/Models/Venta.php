@@ -14,6 +14,7 @@ class Venta extends Model
         'monto_pagado', 'cambio', 'factura_enviada_dian', 'notas',
         // POS Topping
         'nombre_pedido', 'numero_turno', 'canal', 'estado_preparacion',
+        'preparacion_at', 'listo_at', 'entregado_at',
     ];
 
     protected $casts = [
@@ -24,6 +25,9 @@ class Venta extends Model
         'cambio'                => 'integer',
         'numero_turno'          => 'integer',
         'factura_enviada_dian'  => 'boolean',
+        'preparacion_at'        => 'datetime',
+        'listo_at'              => 'datetime',
+        'entregado_at'          => 'datetime',
     ];
 
     protected static function booted(): void
@@ -61,5 +65,14 @@ class Venta extends Model
     {
         $nombre = mb_strtoupper($this->nombre_pedido ?? 'CLIENTE');
         return $this->numero_turno ? "{$nombre} · #{$this->numero_turno}" : $nombre;
+    }
+
+    // "Efectivo + Nequi"
+    public function resumenPago(): string
+    {
+        if ($this->relationLoaded('pagos') && $this->pagos->isNotEmpty()) {
+            return $this->pagos->map->nombreMetodo()->unique()->join(' + ');
+        }
+        return ucfirst((string) $this->metodo_pago);
     }
 }

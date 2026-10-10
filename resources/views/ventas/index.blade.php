@@ -1,81 +1,128 @@
 @extends('layouts.pos')
 
-@section('titulo', 'Historial de Ventas')
+@section('titulo', 'Ventas')
 
 @section('contenido')
-<div style="padding:16px;max-width:1200px;margin:0 auto;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h1 style="font-size:22px;">Ventas del día</h1>
-        <a href="/ventas/crear"
-           style="padding:10px 20px;background:#000;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;">
-            + Nueva venta
-        </a>
+@php
+    $dinero = fn ($v) => '$' . number_format((int) $v, 0, ',', '.');
+    $sedeActual = \App\Models\Sede::find(session('sede_id'));
+    $puedeAnular = auth()->user()->rol === 'dueno';
+
+    $hoy = \App\Models\Venta::where('sede_id', session('sede_id'))
+        ->where('estado', 'completada')
+        ->whereDate('created_at', today());
+    $totalHoy   = (clone $hoy)->sum('total');
+    $pedidosHoy = (clone $hoy)->count();
+
+    $estadosCocina = [
+        'pendiente'      => ['Pendiente', '#fff3cd', '#856404'],
+        'en_preparacion' => ['En preparación', '#e7f1ff', '#0c447c'],
+        'listo'          => ['Listo', '#d4edda', '#155724'],
+        'entregado'      => ['Entregado', '#f0f0f0', '#555'],
+    ];
+@endphp
+
+<div style="padding:16px;max-width:1150px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+        <div>
+            <h1 style="font-size:22px;">Ventas</h1>
+            <div style="font-size:13px;color:#888;">Sede {{ $sedeActual?->nombre }}</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:10px 16px;text-align:right;">
+            <div style="font-size:12px;color:#888;">Hoy · {{ $pedidosHoy }} pedidos</div>
+            <div style="font-size:20px;font-weight:bold;">{{ $dinero($totalHoy) }}</div>
+        </div>
     </div>
 
-    <div style="background:#fff;border-radius:12px;overflow:hidden;">
-        <table style="width:100%;border-collapse:collapse;">
+    <div style="background:#fff;border-radius:12px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:820px;">
             <thead>
                 <tr style="background:#000;color:#fff;">
-                    <th style="padding:12px;text-align:left;font-size:13px;">#</th>
                     <th style="padding:12px;text-align:left;font-size:13px;">Fecha</th>
-                    <th style="padding:12px;text-align:left;font-size:13px;">Cliente</th>
-                    <th style="padding:12px;text-align:left;font-size:13px;">Total</th>
+                    <th style="padding:12px;text-align:left;font-size:13px;">Pedido</th>
+                    <th style="padding:12px;text-align:center;font-size:13px;">Productos</th>
                     <th style="padding:12px;text-align:left;font-size:13px;">Pago</th>
-                    <th style="padding:12px;text-align:left;font-size:13px;">Estado</th>
-                    <th style="padding:12px;text-align:left;font-size:13px;">Acciones</th>
+                    <th style="padding:12px;text-align:right;font-size:13px;">Total</th>
+                    <th style="padding:12px;text-align:center;font-size:13px;">Cocina</th>
+                    <th style="padding:12px;text-align:center;font-size:13px;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($ventas as $venta)
-                <tr style="border-bottom:1px solid #eee;">
-                    <td style="padding:12px;font-size:13px;">
-                        {{ str_pad($venta->id, 6, '0', STR_PAD_LEFT) }}
-                    </td>
-                    <td style="padding:12px;font-size:13px;">
-                        {{ $venta->created_at->format('d/m/Y H:i') }}
-                    </td>
-                    <td style="padding:12px;font-size:13px;">
-                        {{ $venta->cliente->nombre ?? 'Consumidor final' }}
-                    </td>
-                    <td style="padding:12px;font-size:13px;">
-                        $ {{ number_format($venta->total, 0, ',', '.') }}
-                    </td>
-                    <td style="padding:12px;font-size:13px;">
-                        {{ ucfirst($venta->metodo_pago) }}
-                    </td>
-                    <td style="padding:12px;">
-                        <span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:bold;
-                            background:{{ $venta->estado === 'completada' ? '#d4edda' : '#f8d7da' }};
-                            color:{{ $venta->estado === 'completada' ? '#155724' : '#721c24' }};">
-                            {{ ucfirst($venta->estado) }}
-                        </span>
-                    </td>
-                    <td style="padding:12px;display:flex;gap:8px;align-items:center;">
-                        <a href="/ventas/{{ $venta->id }}/ticket" target="_blank"
-                           style="color:#000;text-decoration:underline;font-size:13px;">
-                            🖨 Ticket
-                        </a>
-                        @if($venta->estado === 'completada')
-                        <a href="/ventas/{{ $venta->id }}/devolucion"
-                           style="color:#c00;text-decoration:underline;font-size:13px;">
-                            🔄 Devolver
-                        </a>
-                        @endif
-                    </td>
-                </tr>
+                    @php
+                        $anulada = $venta->estado === 'anulada';
+                        $ec = $estadosCocina[$venta->estado_preparacion] ?? null;
+                    @endphp
+                    <tr id="venta-{{ $venta->id }}" style="border-bottom:1px solid #eee;{{ $anulada ? 'opacity:.5;' : '' }}">
+                        <td style="padding:12px;font-size:13px;white-space:nowrap;">
+                            {{ $venta->created_at->format('d/m h:i a') }}
+                        </td>
+                        <td style="padding:12px;">
+                            <strong style="font-size:14px;">{{ $venta->etiquetaPedido() }}</strong>
+                            @if($venta->canal === 'domicilio')
+                                <div style="font-size:11px;color:#0c447c;">Domicilio</div>
+                            @endif
+                        </td>
+                        <td style="padding:12px;text-align:center;font-size:13px;">{{ $venta->detalles_count }}</td>
+                        <td style="padding:12px;font-size:13px;">{{ $venta->resumenPago() }}</td>
+                        <td style="padding:12px;text-align:right;font-weight:bold;">{{ $dinero($venta->total) }}</td>
+                        <td style="padding:12px;text-align:center;">
+                            @if($anulada)
+                                <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:bold;background:#f8d7da;color:#721c24;">Anulada</span>
+                            @elseif($ec)
+                                <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:bold;background:{{ $ec[1] }};color:{{ $ec[2] }};">{{ $ec[0] }}</span>
+                            @endif
+                        </td>
+                        <td style="padding:12px;text-align:center;">
+                            <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                                <a href="/ventas/{{ $venta->id }}/ticket" target="_blank"
+                                   style="padding:6px 10px;background:#000;color:#fff;border-radius:6px;font-size:11px;text-decoration:none;">Tiquete</a>
+                                <a href="/cocina/{{ $venta->id }}/comanda" target="_blank"
+                                   style="padding:6px 10px;background:#f0f0f0;color:#000;border-radius:6px;font-size:11px;text-decoration:none;">Comanda</a>
+                                @if($puedeAnular && !$anulada)
+                                    <button onclick="anular({{ $venta->id }}, @js($venta->etiquetaPedido()))"
+                                        style="padding:6px 10px;background:#c00;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;">Anular</button>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
                 @empty
-                <tr>
-                    <td colspan="7" style="padding:24px;text-align:center;color:#999;">
-                        No hay ventas aún
-                    </td>
-                </tr>
+                    <tr>
+                        <td colspan="7" style="padding:24px;text-align:center;color:#999;">
+                            Aún no hay ventas en esta sede. <a href="/ventas/crear" style="color:#000;">Registrar la primera</a>
+                        </td>
+                    </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    <div style="margin-top:16px;">
+    <div style="margin-top:14px;">
         {{ $ventas->links() }}
     </div>
 </div>
+
+@section('scripts')
+<script>
+async function anular(id, etiqueta) {
+    if (!confirm(`¿Anular el pedido ${etiqueta}? Esta acción no se puede deshacer.`)) return;
+
+    const res = await fetch(`/ventas/${id}/anular`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+    });
+    const data = await res.json();
+
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.mensaje ?? data.message ?? 'No se pudo anular');
+    }
+}
+</script>
+@endsection
 @endsection
