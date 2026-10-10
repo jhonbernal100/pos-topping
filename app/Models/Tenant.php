@@ -15,6 +15,8 @@ class Tenant extends Model
         'subscription_status', 'trial_ends_at',
         'subscription_ends_at', 'subscription_plan',
         'subscription_price',
+        // Marca (apariencia de la caja)
+        'logo', 'color_primario', 'color_secundario', 'color_fondo',
     ];
 
     protected $casts = [

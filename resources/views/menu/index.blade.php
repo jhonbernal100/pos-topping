@@ -16,10 +16,16 @@
                 Los cambios aplican a todas las sedes. Toca "Disponible" para ocultar un producto de la caja.
             </p>
         </div>
-        <a href="/menu/productos/crear"
-           style="padding:10px 20px;background:#000;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;white-space:nowrap;">
-            + Nuevo producto
-        </a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="/menu/apariencia"
+               style="padding:10px 16px;background:#fff;color:#000;border:1px solid #ddd;border-radius:8px;text-decoration:none;font-size:14px;white-space:nowrap;">
+                Apariencia
+            </a>
+            <a href="/menu/productos/crear"
+               style="padding:10px 20px;background:#000;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;white-space:nowrap;">
+                + Nuevo producto
+            </a>
+        </div>
     </div>
 
     <div id="mensaje" style="display:none;padding:10px;border-radius:8px;margin-bottom:12px;font-size:14px;"></div>
@@ -37,7 +43,13 @@
                      style="background:#fff;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;opacity:{{ $producto->activo ? '1' : '.5' }};">
 
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-                        <div style="font-weight:bold;font-size:15px;">{{ $producto->nombre }}</div>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            @if($producto->foto)
+                                <img src="{{ asset('storage/' . $producto->foto) }}" alt="" loading="lazy"
+                                     style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+                            @endif
+                            <div style="font-weight:bold;font-size:15px;">{{ $producto->nombre }}</div>
+                        </div>
                         <button id="btn-prod-{{ $producto->id }}" onclick="toggleProducto({{ $producto->id }})"
                             style="flex-shrink:0;padding:4px 10px;border:none;border-radius:12px;font-size:11px;font-weight:bold;cursor:pointer;
                                    background:{{ $producto->activo ? '#d4edda' : '#f8d7da' }};

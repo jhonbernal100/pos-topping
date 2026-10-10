@@ -3,47 +3,81 @@
 @section('titulo', 'Nueva venta')
 
 @section('estilos')
+@php
+    $marca  = $tenant->color_primario   ?? '#E4387A';
+    $titulo = $tenant->color_secundario ?? '#4A2C2A';
+    $fondo  = $tenant->color_fondo      ?? '#FFF6EE';
+@endphp
 <style>
-    .caja { display:grid; grid-template-columns:1fr 380px; gap:16px; padding:16px; max-width:1300px; margin:0 auto; }
-    @media (max-width: 900px) { .caja { grid-template-columns:1fr; } }
+    :root { --marca: {{ $marca }}; --titulo: {{ $titulo }}; --fondo: {{ $fondo }}; }
 
-    .tabs { display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; scrollbar-width:none; }
+    body { background: var(--fondo); }
+    body.modo-cliente .navbar,
+    body.modo-cliente .toolbar,
+    body.modo-cliente .footer-avanzas,
+    body.modo-cliente .alerta-trial { display: none; }
+
+    .caja { display:grid; grid-template-columns:1fr 390px; gap:18px; padding:16px; max-width:1400px; margin:0 auto; }
+    @media (max-width: 960px) { .caja { grid-template-columns:1fr; } }
+
+    .encabezado { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+    .marca { display:flex; align-items:center; gap:12px; }
+    .marca img { height:64px; max-width:160px; object-fit:contain; }
+    .marca-nombre { font-size:22px; font-weight:bold; color:var(--titulo); line-height:1.1; }
+    .marca-sede { font-size:13px; color:var(--titulo); opacity:.7; }
+    .btn-modo { padding:8px 14px; border-radius:20px; border:1px solid var(--titulo); background:transparent; color:var(--titulo); cursor:pointer; font-size:13px; font-family:inherit; }
+
+    .tabs { display:flex; gap:8px; overflow-x:auto; margin-bottom:14px; scrollbar-width:none; padding-bottom:2px; }
     .tabs::-webkit-scrollbar { display:none; }
-    .tab { padding:10px 16px; border-radius:20px; border:1px solid #ddd; background:#fff; cursor:pointer; white-space:nowrap; font-size:14px; font-family:inherit; }
-    .tab.activa { background:#000; color:#fff; border-color:#000; font-weight:bold; }
+    .tab { padding:12px 20px; border-radius:24px; border:2px solid transparent; background:#fff; color:var(--titulo); cursor:pointer; white-space:nowrap; font-size:15px; font-weight:bold; font-family:inherit; }
+    .tab.activa { background:var(--marca); color:#fff; }
 
-    .grid-prod { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
-    .prod { background:#fff; border:none; border-radius:12px; padding:14px; text-align:left; cursor:pointer; min-height:92px;
-            display:flex; flex-direction:column; justify-content:space-between; font-family:inherit; }
-    .prod:active { transform:scale(.98); }
-    .prod-nombre { font-weight:bold; font-size:15px; }
-    .prod-precio { font-size:13px; color:#555; margin-top:6px; }
+    .grid-prod { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:14px; }
+    .prod { background:#fff; border:none; border-radius:16px; padding:0; text-align:left; cursor:pointer; overflow:hidden;
+            display:flex; flex-direction:column; font-family:inherit; box-shadow:0 2px 8px rgba(0,0,0,.06); transition:transform .12s; }
+    .prod:active { transform:scale(.97); }
+    .prod:disabled { cursor:not-allowed; }
+    .prod-foto { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; background:var(--fondo); }
+    .prod-inicial { width:100%; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
+                    background:var(--marca); color:#fff; font-size:46px; font-weight:bold; opacity:.85; }
+    .prod-info { padding:10px 12px 12px; display:flex; flex-direction:column; gap:4px; flex:1; }
+    .prod-nombre { font-weight:bold; font-size:16px; color:var(--titulo); }
+    .prod-desc { font-size:12px; color:#777; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .prod-precio { font-size:16px; font-weight:bold; color:var(--marca); margin-top:auto; padding-top:4px; }
 
-    .panel { background:#fff; border-radius:12px; padding:16px; position:sticky; top:12px; align-self:start; }
-    .item { border-bottom:1px solid #f0f0f0; padding:10px 0; }
+    .panel { background:#fff; border-radius:16px; padding:18px; position:sticky; top:12px; align-self:start; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+    .panel-titulo { font-size:20px; font-weight:bold; color:var(--titulo); margin-bottom:10px; }
+    .item { border-bottom:1px solid #f2f2f2; padding:10px 0; }
 
-    .btn { padding:12px; border-radius:10px; border:none; cursor:pointer; font-size:15px; font-family:inherit; }
-    .btn-negro { background:#000; color:#fff; font-weight:bold; }
-    .btn-gris { background:#f0f0f0; color:#000; }
+    .btn { padding:12px; border-radius:12px; border:none; cursor:pointer; font-size:15px; font-family:inherit; }
+    .btn-marca { background:var(--marca); color:#fff; font-weight:bold; }
+    .btn-gris { background:#f2f2f2; color:#000; }
     .btn:disabled { opacity:.5; cursor:not-allowed; }
 
-    .metodo { flex:1; padding:10px 4px; border:2px solid #ddd; border-radius:10px; background:#fff; cursor:pointer; font-size:13px; font-family:inherit; }
-    .metodo.activo { border-color:#000; background:#000; color:#fff; font-weight:bold; }
+    .metodo { flex:1; padding:10px 4px; border:2px solid #e5e5e5; border-radius:10px; background:#fff; cursor:pointer; font-size:13px; font-family:inherit; }
+    .metodo.activo { border-color:var(--marca); background:var(--marca); color:#fff; font-weight:bold; }
 
-    .campo { width:100%; padding:10px; font-size:15px; border:2px solid #ddd; border-radius:8px; font-family:inherit; }
+    .campo { width:100%; padding:11px; font-size:15px; border:2px solid #e5e5e5; border-radius:10px; font-family:inherit; }
+    .campo:focus { outline:none; border-color:var(--marca); }
 
-    .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:flex-end; justify-content:center; }
+    .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1000; align-items:flex-end; justify-content:center; }
     .overlay.abierto { display:flex; }
-    .modal { background:#fff; width:100%; max-width:560px; max-height:92vh; overflow-y:auto; border-radius:16px 16px 0 0; padding:18px; }
-    @media (min-width: 700px) { .overlay { align-items:center; } .modal { border-radius:16px; } }
+    .modal { background:#fff; width:100%; max-width:600px; max-height:94vh; overflow-y:auto; border-radius:20px 20px 0 0; }
+    @media (min-width: 700px) { .overlay { align-items:center; } .modal { border-radius:20px; } }
+    .modal-cuerpo { padding:18px; }
+    .modal-foto { width:100%; max-height:280px; object-fit:contain; display:block; background:var(--fondo); }
 
     .seccion { margin-top:16px; }
-    .seccion-titulo { font-size:14px; font-weight:bold; margin-bottom:8px; }
-    .chips { display:flex; gap:6px; flex-wrap:wrap; }
-    .chip { padding:8px 12px; border-radius:18px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:13px;
+    .seccion-titulo { font-size:15px; font-weight:bold; margin-bottom:8px; color:var(--titulo); }
+    .chips { display:flex; gap:8px; flex-wrap:wrap; }
+    .chip { padding:9px 14px; border-radius:20px; border:2px solid #e5e5e5; background:#fff; cursor:pointer; font-size:14px;
             display:inline-flex; gap:6px; align-items:center; font-family:inherit; }
-    .chip.sel { background:#000; color:#fff; border-color:#000; }
-    .contador { background:#99CF8E; color:#1f4d17; border-radius:10px; padding:0 6px; font-size:11px; font-weight:bold; }
+    .chip.sel { background:var(--marca); color:#fff; border-color:var(--marca); }
+    .contador { background:#fff; color:var(--marca); border-radius:10px; padding:0 7px; font-size:12px; font-weight:bold; }
+
+    .salir-modo { display:none; position:fixed; right:10px; bottom:10px; z-index:900; padding:6px 10px; font-size:11px;
+                  border-radius:12px; border:none; background:rgba(0,0,0,.25); color:#fff; cursor:pointer; }
+    body.modo-cliente .salir-modo { display:block; }
 </style>
 @endsection
 
@@ -56,9 +90,17 @@
 <div class="caja">
     {{-- Menú --}}
     <div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;">
-            <h1 style="font-size:20px;">Nueva venta</h1>
-            <span style="font-size:13px;color:#555;">Sede {{ $sede->nombre }}</span>
+        <div class="encabezado">
+            <div class="marca">
+                @if($tenant->logo)
+                    <img src="{{ asset('storage/' . $tenant->logo) }}" alt="{{ $tenant->nombre }}">
+                @endif
+                <div>
+                    <div class="marca-nombre">{{ $tenant->nombre }}</div>
+                    <div class="marca-sede">Sede {{ $sede->nombre }}</div>
+                </div>
+            </div>
+            <button class="btn-modo" id="btn-modo" onclick="alternarModoCliente()">Modo cliente</button>
         </div>
         <div class="tabs" id="tabs"></div>
         <div class="grid-prod" id="productos"></div>
@@ -66,20 +108,22 @@
 
     {{-- Pedido y pago --}}
     <div class="panel">
-        <label for="nombre-pedido" style="display:block;font-size:13px;color:#555;margin-bottom:4px;">
-            Nombre para llamar al cliente *
+        <div class="panel-titulo">Tu pedido</div>
+
+        <label for="nombre-pedido" style="display:block;font-size:13px;color:#666;margin-bottom:4px;">
+            ¿A nombre de quién? *
         </label>
         <input id="nombre-pedido" class="campo" maxlength="60" placeholder="Ej: Laura" autocomplete="off" style="font-size:18px;">
 
         <div id="items" style="margin:12px 0;"></div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:20px;font-weight:bold;padding-top:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:22px;font-weight:bold;padding-top:4px;color:var(--titulo);">
             <span>Total</span>
-            <span id="total">$0</span>
+            <span id="total" style="color:var(--marca);">$0</span>
         </div>
 
         <div style="margin-top:14px;">
-            <div style="font-size:13px;color:#555;margin-bottom:6px;">Pago</div>
+            <div style="font-size:13px;color:#666;margin-bottom:6px;">Pago</div>
             <div id="pagos"></div>
             <button type="button" class="btn btn-gris" id="btn-dividir" onclick="agregarPago()" style="width:100%;margin-top:8px;font-size:13px;padding:8px;">
                 + Dividir pago
@@ -87,9 +131,9 @@
             <div id="resumen-pago" style="font-size:14px;margin-top:10px;"></div>
         </div>
 
-        <div id="error" style="display:none;margin-top:10px;padding:10px;border-radius:8px;background:#f8d7da;color:#721c24;font-size:13px;"></div>
+        <div id="error" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:#f8d7da;color:#721c24;font-size:13px;"></div>
 
-        <button id="btn-cobrar" class="btn btn-negro" onclick="cobrar()" style="width:100%;margin-top:14px;font-size:18px;padding:16px;">
+        <button id="btn-cobrar" class="btn btn-marca" onclick="cobrar()" style="width:100%;margin-top:14px;font-size:19px;padding:16px;">
             Cobrar
         </button>
     </div>
@@ -102,8 +146,10 @@
 
 {{-- Venta registrada --}}
 <div class="overlay" id="modal-ok">
-    <div class="modal" id="ok-contenido" role="dialog" aria-modal="true" style="text-align:center;"></div>
+    <div class="modal" id="ok-contenido" role="dialog" aria-modal="true" style="text-align:center;padding:24px;"></div>
 </div>
+
+<button class="salir-modo" onclick="alternarModoCliente()">Salir del modo cliente</button>
 @endif
 @endsection
 
@@ -123,13 +169,41 @@ const dinero = v => '$' + Math.round(v || 0).toLocaleString('es-CO');
 const esc    = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 // ------------------------------------------------------------------
+// Modo cliente (oculta el menú del sistema)
+// ------------------------------------------------------------------
+function alternarModoCliente() {
+    const activo = document.body.classList.toggle('modo-cliente');
+    $('btn-modo').textContent = activo ? 'Modo cajero' : 'Modo cliente';
+    try { localStorage.setItem('modoCliente', activo ? '1' : '0'); } catch (e) {}
+}
+
+try {
+    if (localStorage.getItem('modoCliente') === '1') {
+        document.body.classList.add('modo-cliente');
+        $('btn-modo').textContent = 'Modo cajero';
+    }
+} catch (e) {}
+
+// ------------------------------------------------------------------
 // Menú
 // ------------------------------------------------------------------
+function imagen(p) {
+    return p.foto
+        ? `<img class="prod-foto" src="${esc(p.foto)}" alt="${esc(p.nombre)}" loading="lazy">`
+        : `<div class="prod-inicial">${esc(p.nombre.charAt(0))}</div>`;
+}
+
 function renderTabs() {
     $('tabs').innerHTML = MENU.map(c => `
         <button class="tab ${c.id === categoriaActiva ? 'activa' : ''}" onclick="categoriaActiva = ${c.id}; renderTabs(); renderProductos();">
             ${esc(c.nombre)}
         </button>`).join('');
+}
+
+// Stock que queda descontando lo que ya está en el pedido (productos de reventa)
+function disponibleEnStock(p) {
+    const enPedido = carrito.filter(i => i.producto.id === p.id).reduce((s, i) => s + i.cantidad, 0);
+    return p.stock - enPedido;
 }
 
 function renderProductos() {
@@ -138,14 +212,20 @@ function renderProductos() {
         $('productos').innerHTML = '<div style="color:#999;">No hay productos disponibles hoy.</div>';
         return;
     }
-    $('productos').innerHTML = cat.productos.map(p => `
-        <button class="prod" onclick="abrirProducto(${p.id})">
-            <span class="prod-nombre">${esc(p.nombre)}</span>
-            <span class="prod-precio">
-                ${p.variantes.length ? 'Desde ' : ''}${dinero(p.precio)}
-                ${p.tipo === 'reventa' ? ' · ' + p.stock + ' disp.' : ''}
-            </span>
-        </button>`).join('');
+    $('productos').innerHTML = cat.productos.map(p => {
+        const agotado = p.tipo === 'reventa' && disponibleEnStock(p) <= 0;
+        return `
+            <button class="prod" onclick="abrirProducto(${p.id})" ${agotado ? 'disabled style="opacity:.45;"' : ''}>
+                ${imagen(p)}
+                <div class="prod-info">
+                    <span class="prod-nombre">${esc(p.nombre)}</span>
+                    ${p.descripcion ? `<span class="prod-desc">${esc(p.descripcion)}</span>` : ''}
+                    <span class="prod-precio">
+                        ${agotado ? '<span style="color:#c00;">Agotado</span>' : `${p.variantes.length ? 'Desde ' : ''}${dinero(p.precio)}`}
+                    </span>
+                </div>
+            </button>`;
+    }).join('');
 }
 
 function buscarProducto(id) {
@@ -230,11 +310,14 @@ function seccion(titulo, contenido) {
 function renderModal() {
     const c = config, p = c.producto, r = calcular(c);
 
-    let html = `
+    let html = p.foto ? `<img class="modal-foto" src="${esc(p.foto)}" alt="${esc(p.nombre)}">` : '';
+
+    html += `
+        <div class="modal-cuerpo">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
             <div>
-                <div style="font-size:18px;font-weight:bold;">${esc(p.nombre)}</div>
-                ${p.descripcion ? `<div style="font-size:12px;color:#666;margin-top:4px;">${esc(p.descripcion)}</div>` : ''}
+                <div style="font-size:22px;font-weight:bold;color:var(--titulo);">${esc(p.nombre)}</div>
+                ${p.descripcion ? `<div style="font-size:13px;color:#666;margin-top:4px;">${esc(p.descripcion)}</div>` : ''}
             </div>
             <button class="btn btn-gris" onclick="cerrarModal()" aria-label="Cerrar" style="padding:6px 12px;">✕</button>
         </div>`;
@@ -286,7 +369,7 @@ function renderModal() {
                 <strong style="min-width:24px;text-align:center;">${c.cantidad}</strong>
                 <button class="btn btn-gris" onclick="cambiarCantidad(1)" aria-label="Más">+</button>
             </div>
-            <button class="btn btn-negro" style="flex:1;" onclick="agregarAlPedido()" ${deshabilitado ? 'disabled' : ''}>
+            <button class="btn btn-marca" style="flex:1;font-size:17px;" onclick="agregarAlPedido()" ${deshabilitado ? 'disabled' : ''}>
                 Agregar · ${dinero(r.unitario * c.cantidad)}
             </button>
         </div>`;
@@ -295,6 +378,7 @@ function renderModal() {
         html += `<div style="font-size:12px;color:#c00;margin-top:8px;">${r.errores.map(esc).join('<br>')}</div>`;
     }
 
+    html += '</div>';
     $('modal-contenido').innerHTML = html;
 }
 
@@ -303,7 +387,6 @@ function sumarOpcion(grupoId, opcionId) {
     const elegidos = g.opciones.reduce((s, o) => s + (config.seleccion[o.id] || 0), 0);
 
     if (g.maximo === 1) {
-        // Selección única (ej: sabor de helado): reemplaza la anterior
         g.opciones.forEach(o => delete config.seleccion[o.id]);
         config.seleccion[opcionId] = 1;
     } else if (g.maximo !== null && elegidos >= g.maximo) {
@@ -357,7 +440,7 @@ function totalPedido() {
 
 function renderCarrito() {
     if (!carrito.length) {
-        $('items').innerHTML = '<div style="color:#999;font-size:14px;padding:12px 0;">Toca un producto del menú para agregarlo.</div>';
+        $('items').innerHTML = '<div style="color:#999;font-size:14px;padding:12px 0;">Elige tus productos del menú.</div>';
     } else {
         $('items').innerHTML = carrito.map((i, idx) => {
             const porGrupo = {};
@@ -371,8 +454,8 @@ function renderCarrito() {
             return `
                 <div class="item">
                     <div style="display:flex;justify-content:space-between;gap:8px;">
-                        <strong style="font-size:14px;">${i.cantidad} × ${esc(i.producto.nombre)}${i.varianteNombre ? ' (' + esc(i.varianteNombre) + ')' : ''}</strong>
-                        <strong style="font-size:14px;white-space:nowrap;">${dinero(i.unitario * i.cantidad)}</strong>
+                        <strong style="font-size:15px;color:var(--titulo);">${i.cantidad} × ${esc(i.producto.nombre)}${i.varianteNombre ? ' (' + esc(i.varianteNombre) + ')' : ''}</strong>
+                        <strong style="font-size:15px;white-space:nowrap;">${dinero(i.unitario * i.cantidad)}</strong>
                     </div>
                     <div style="font-size:12px;color:#555;margin-top:4px;line-height:1.5;">
                         ${detalle}
@@ -388,11 +471,17 @@ function renderCarrito() {
     }
 
     $('total').textContent = dinero(totalPedido());
+    renderProductos();
     renderPagos();
 }
 
 function cambiarCantidadItem(idx, delta) {
-    carrito[idx].cantidad = Math.max(1, Math.min(50, carrito[idx].cantidad + delta));
+    const item = carrito[idx];
+    if (delta > 0 && item.producto.tipo === 'reventa' && disponibleEnStock(item.producto) <= 0) {
+        mostrarError(`No hay más ${item.producto.nombre} disponible.`);
+        return;
+    }
+    item.cantidad = Math.max(1, Math.min(50, item.cantidad + delta));
     renderCarrito();
 }
 
@@ -423,7 +512,7 @@ function renderPagos() {
         if (p.metodo === 'efectivo') {
             html += `
                 <div style="margin-top:10px;">
-                    <label for="monto-0" style="font-size:12px;color:#555;">Recibe</label>
+                    <label for="monto-0" style="font-size:12px;color:#666;">Recibe</label>
                     <input id="monto-0" type="number" inputmode="numeric" class="campo" value="${p.monto ?? ''}" placeholder="${total}"
                            oninput="pagos[0].monto = this.value === '' ? null : parseInt(this.value, 10); actualizarResumen();">
                     <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
@@ -541,7 +630,6 @@ async function cobrar() {
     const payload = {
         nombre_pedido: nombre,
         items: carrito.map(i => {
-            // Expande la selección en el orden de las opciones: [id, id, id...]
             const modificadores = [];
             i.producto.grupos.forEach(g => g.opciones.forEach(o => {
                 for (let k = 0; k < (i.seleccion[o.id] || 0); k++) modificadores.push(o.id);
@@ -590,13 +678,13 @@ async function cobrar() {
 
 function mostrarConfirmacion(data) {
     $('ok-contenido').innerHTML = `
-        <div style="font-size:14px;color:#555;">Pedido registrado</div>
-        <div style="font-size:34px;font-weight:bold;margin:10px 0;">${esc(data.etiqueta)}</div>
-        <div style="font-size:16px;">Total ${dinero(data.total)}</div>
-        ${data.cambio > 0 ? `<div style="font-size:26px;font-weight:bold;margin-top:12px;background:#fff3cd;color:#856404;border-radius:10px;padding:10px;">Cambio ${dinero(data.cambio)}</div>` : ''}
+        <div style="font-size:15px;color:#666;">¡Gracias! Te llamaremos como</div>
+        <div style="font-size:38px;font-weight:bold;margin:10px 0;color:var(--marca);">${esc(data.etiqueta)}</div>
+        <div style="font-size:17px;color:var(--titulo);">Total ${dinero(data.total)}</div>
+        ${data.cambio > 0 ? `<div style="font-size:26px;font-weight:bold;margin-top:12px;background:#fff3cd;color:#856404;border-radius:12px;padding:10px;">Cambio ${dinero(data.cambio)}</div>` : ''}
         <div style="display:flex;gap:10px;margin-top:20px;">
             <button class="btn btn-gris" style="flex:1;" onclick="window.open('/ventas/${data.venta_id}/ticket', '_blank')">Imprimir tiquete</button>
-            <button class="btn btn-negro" style="flex:1;" onclick="nuevaVenta()">Nueva venta</button>
+            <button class="btn btn-marca" style="flex:1;" onclick="nuevaVenta()">Nueva venta</button>
         </div>`;
     $('modal-ok').classList.add('abierto');
 }
@@ -613,7 +701,6 @@ function nuevaVenta() {
 
 // Inicio
 renderTabs();
-renderProductos();
 renderCarrito();
 </script>
 @endif

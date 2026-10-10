@@ -7,7 +7,6 @@ use App\Models\Producto;
 use App\Models\Sede;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
-use App\Models\VentaPago;
 use App\Services\CalculadoraPedido;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +27,8 @@ class VentaController extends Controller
     // Pantalla de caja
     public function crear()
     {
-        $sede = Sede::find(session('sede_id'));
+        $sede   = Sede::find(session('sede_id'));
+        $tenant = auth()->user()->tenant;
 
         $categorias = CategoriaMenu::where('activo', true)
             ->orderBy('orden')
@@ -47,6 +47,7 @@ class VentaController extends Controller
                     'id'          => $p->id,
                     'nombre'      => $p->nombre,
                     'descripcion' => $p->descripcion,
+                    'foto'        => $p->foto ? asset('storage/' . $p->foto) : null,
                     'precio'      => (int) $p->precio_venta,
                     'tipo'        => $p->tipo_menu,
                     'stock'       => (int) $p->stock,
@@ -78,7 +79,7 @@ class VentaController extends Controller
             ];
         })->filter(fn ($c) => $c['productos']->isNotEmpty())->values();
 
-        return view('ventas.crear', compact('menu', 'sede'));
+        return view('ventas.crear', compact('menu', 'sede', 'tenant'));
     }
 
     public function store(Request $request, CalculadoraPedido $calculadora)

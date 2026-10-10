@@ -143,11 +143,15 @@ Route::middleware('auth')->group(function () {
     // Menú (solo propietario — validado en MenuController)
     Route::prefix('menu')->group(function () {
         Route::get('/',                                    [MenuController::class, 'index'])->name('menu.index');
+        Route::get('/apariencia',                          [MenuController::class, 'apariencia'])->name('menu.apariencia');
+        Route::post('/apariencia',                         [MenuController::class, 'guardarApariencia'])->name('menu.guardarApariencia');
         Route::get('/productos/crear',                     [MenuController::class, 'crear'])->name('menu.crear');
         Route::post('/productos',                          [MenuController::class, 'store'])->name('menu.store');
         Route::get('/productos/{producto}/editar',         [MenuController::class, 'editar'])->name('menu.editar');
         Route::post('/productos/{producto}/actualizar',    [MenuController::class, 'actualizar'])->name('menu.actualizar');
         Route::post('/productos/{producto}/toggle',        [MenuController::class, 'toggleProducto'])->name('menu.toggleProducto');
+        Route::post('/productos/{producto}/foto',          [MenuController::class, 'subirFoto'])->name('menu.subirFoto');
+        Route::delete('/productos/{producto}/foto',        [MenuController::class, 'quitarFoto'])->name('menu.quitarFoto');
         Route::post('/modificadores/{modificador}/toggle', [MenuController::class, 'toggleModificador'])->name('menu.toggleModificador');
     });
 

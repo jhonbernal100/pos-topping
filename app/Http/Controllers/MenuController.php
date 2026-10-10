@@ -7,9 +7,11 @@ use App\Models\GrupoModificador;
 use App\Models\Modificador;
 use App\Models\Producto;
 use App\Models\ProductoVariante;
+use App\Services\ImagenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class MenuController extends Controller
 {
@@ -116,6 +118,98 @@ class MenuController extends Controller
             'activo'  => $modificador->activo,
             'mensaje' => $modificador->nombre . ($modificador->activo ? ' disponible' : ' marcado como agotado'),
         ]);
+    }
+
+    // ---------------------------------------------------------------
+    // Fotos de productos
+    // ---------------------------------------------------------------
+
+    public function subirFoto(Request $request, Producto $producto, ImagenService $imagenes)
+    {
+        $this->soloPropietario();
+
+        $request->validate(
+            ['foto' => 'required|image|max:10240'],
+            ['foto.max' => 'La foto no puede pesar más de 10 MB.', 'foto.image' => 'El archivo debe ser una imagen.']
+        );
+
+        try {
+            $ruta = $imagenes->guardar($request->file('foto'), 'productos/' . session('tenant_id'));
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'mensaje' => $e->getMessage()], 422);
+        }
+
+        $imagenes->borrar($producto->foto);
+        $producto->update(['foto' => $ruta]);
+
+        return response()->json([
+            'success' => true,
+            'url'     => asset('storage/' . $ruta),
+            'mensaje' => 'Foto actualizada',
+        ]);
+    }
+
+    public function quitarFoto(Producto $producto, ImagenService $imagenes)
+    {
+        $this->soloPropietario();
+
+        $imagenes->borrar($producto->foto);
+        $producto->update(['foto' => null]);
+
+        return response()->json(['success' => true, 'mensaje' => 'Foto eliminada']);
+    }
+
+    // ---------------------------------------------------------------
+    // Apariencia de la caja (logo y colores)
+    // ---------------------------------------------------------------
+
+    public function apariencia()
+    {
+        $this->soloPropietario();
+
+        return view('menu.apariencia', ['tenant' => auth()->user()->tenant]);
+    }
+
+    public function guardarApariencia(Request $request, ImagenService $imagenes)
+    {
+        $this->soloPropietario();
+
+        $color = ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'];
+
+        $data = $request->validate([
+            'color_primario'   => $color,
+            'color_secundario' => $color,
+            'color_fondo'      => $color,
+            'logo'             => 'nullable|image|max:10240',
+            'quitar_logo'      => 'nullable|boolean',
+        ]);
+
+        $tenant = auth()->user()->tenant;
+
+        $cambios = [
+            'color_primario'   => strtoupper($data['color_primario']),
+            'color_secundario' => strtoupper($data['color_secundario']),
+            'color_fondo'      => strtoupper($data['color_fondo']),
+        ];
+
+        if ($request->boolean('quitar_logo')) {
+            $imagenes->borrar($tenant->logo);
+            $cambios['logo'] = null;
+        }
+
+        if ($request->hasFile('logo')) {
+            try {
+                $ruta = $imagenes->guardar($request->file('logo'), 'logos/' . $tenant->id, 600);
+            } catch (InvalidArgumentException $e) {
+                return back()->withErrors(['logo' => $e->getMessage()]);
+            }
+            $imagenes->borrar($tenant->logo);
+            $cambios['logo'] = $ruta;
+        }
+
+        $tenant->update($cambios);
+
+        return redirect('/menu/apariencia')->with('ok', 'Apariencia guardada. Abre Nueva venta para verla.');
     }
 
     // ---------------------------------------------------------------

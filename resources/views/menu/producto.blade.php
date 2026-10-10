@@ -59,6 +59,35 @@
         </div>
     </div>
 
+    {{-- Foto --}}
+    <div style="{{ $estCard }}">
+        <h2 style="font-size:16px;margin-bottom:12px;">Foto</h2>
+        @if($producto->exists)
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+                <div id="foto-caja" style="width:140px;height:105px;border-radius:10px;background:#f5f5f5;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                    @if($producto->foto)
+                        <img src="{{ asset('storage/' . $producto->foto) }}" alt="Foto de {{ $producto->nombre }}" style="width:100%;height:100%;object-fit:cover;">
+                    @else
+                        <span style="font-size:12px;color:#999;">Sin foto</span>
+                    @endif
+                </div>
+                <div>
+                    <label style="display:inline-block;padding:10px 14px;background:#000;color:#fff;border-radius:8px;font-size:13px;cursor:pointer;">
+                        Subir o tomar foto
+                        <input type="file" accept="image/*" onchange="subirFoto(this)" style="display:none;">
+                    </label>
+                    <button type="button" id="btn-quitar-foto" onclick="quitarFoto()"
+                        style="padding:10px 14px;background:#f8d7da;color:#721c24;border:none;border-radius:8px;font-size:13px;cursor:pointer;{{ $producto->foto ? '' : 'display:none;' }}">
+                        Quitar
+                    </button>
+                    <div id="foto-estado" style="font-size:12px;color:#888;margin-top:6px;">Usa una foto cuadrada o horizontal, con buena luz.</div>
+                </div>
+            </div>
+        @else
+            <p style="font-size:13px;color:#888;">Guarda el producto primero; luego podrás agregarle la foto.</p>
+        @endif
+    </div>
+
     {{-- Precio y variantes --}}
     <div style="{{ $estCard }}">
         <h2 style="font-size:16px;margin-bottom:12px;">Precio</h2>
@@ -154,6 +183,7 @@
 <script>
 let variantes = @json($variantesJs);
 const urlGuardar = @json($producto->exists ? "/menu/productos/{$producto->id}/actualizar" : '/menu/productos');
+const urlFoto    = @json($producto->exists ? "/menu/productos/{$producto->id}/foto" : null);
 const estInput = 'padding:10px;font-size:15px;border:2px solid #ddd;border-radius:8px;width:100%;';
 
 function escaparHtml(s) {
@@ -206,6 +236,53 @@ function mostrarMensaje(ok, texto) {
     msg.style.color      = ok ? '#155724' : '#721c24';
     msg.textContent      = texto;
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function subirFoto(input) {
+    if (!input.files.length || !urlFoto) return;
+    const estado = document.getElementById('foto-estado');
+    estado.textContent = 'Subiendo...';
+
+    const form = new FormData();
+    form.append('foto', input.files[0]);
+
+    try {
+        const res = await fetch(urlFoto, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: form,
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.mensaje ?? data.message ?? 'No se pudo subir la foto');
+
+        document.getElementById('foto-caja').innerHTML =
+            `<img src="${data.url}" alt="Foto del producto" style="width:100%;height:100%;object-fit:cover;">`;
+        document.getElementById('btn-quitar-foto').style.display = 'inline-block';
+        estado.textContent = 'Foto guardada.';
+    } catch (e) {
+        estado.textContent = e.message;
+    }
+    input.value = '';
+}
+
+async function quitarFoto() {
+    if (!urlFoto || !confirm('¿Quitar la foto de este producto?')) return;
+    const res = await fetch(urlFoto, {
+        method: 'DELETE',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+    });
+    const data = await res.json();
+    if (data.success) {
+        document.getElementById('foto-caja').innerHTML = '<span style="font-size:12px;color:#999;">Sin foto</span>';
+        document.getElementById('btn-quitar-foto').style.display = 'none';
+        document.getElementById('foto-estado').textContent = 'Foto eliminada.';
+    }
 }
 
 async function guardar() {
