@@ -322,11 +322,11 @@
         @endphp
         <div class="version-badge">v {{ $major }}.{{ $minor }}.{{ $patch }} · {{ date('Y') }}</div>
 
-        <div class="slogan">Tu exito es nuestro objetivo</div>
+        <div class="slogan">Tu éxito es nuestro objetivo</div>
 
         <div class="divider"></div>
 
-        <div class="form-titulo">Iniciar sesion</div>
+        <div class="form-titulo">Iniciar sesión</div>
 
         @if($errors->any())
         <div class="error">{{ $errors->first() }}</div>
@@ -335,12 +335,12 @@
         <form method="POST" action="/login" style="width:100%">
             @csrf
             <div class="campo">
-                <label>Correo electronico</label>
+                <label>Correo electrónico</label>
                 <input type="email" name="email" value="{{ old('email') }}"
                        placeholder="tu@correo.com" required autofocus>
             </div>
             <div class="campo">
-                <label>Contrasena</label>
+                <label>Contraseña</label>
                 <input type="password" name="password"
                        placeholder="••••••••" required>
             </div>
@@ -351,7 +351,7 @@
             <div class="footer-divider"></div>
 
             <a href="/trial" class="footer-demo">
-                Solicitar demo gratuito — 30 dias gratis
+                Solicitar demo gratuito — 30 días gratis
             </a>
 
             <a href="/planes" class="footer-planes">
@@ -359,7 +359,7 @@
             </a>
 
             <div class="footer-contacto">
-                Necesitas ayuda?
+                ¿Necesitas ayuda?
                 <a href="https://www.avanzas.digital/index.html" target="_blank">
                     Contacta a Avanzas Digital
                 </a>
@@ -371,20 +371,21 @@
     <div class="panel-video">
 
         <div class="video-titulo">
-            El POS mas simple para<br>
+            El POS más dulce para<br>
             <span>heladerías y negocios de postres</span>
         </div>
 
         <div class="video-subtitulo">
-            Vende, inventaria y controla tu negocio desde cualquier dispositivo.
+            Vende, arma pedidos al gusto de cada cliente y controla tus sedes desde cualquier dispositivo.
             Sin complicaciones, sin instalaciones.
         </div>
 
         <div class="carrusel-wrapper">
             <div class="carrusel-box" id="carrusel">
                 @for($i = 1; $i <= 10; $i++)
-                <img src="/slides/slide-{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}.jpg"
-                     alt="Slide {{ $i }}"
+                <img src="/slides/slide-{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}.jpg?v=2"
+                     alt="POS Topping — diapositiva {{ $i }}"
+                     loading="{{ $i <= 2 ? 'eager' : 'lazy' }}"
                      class="slide {{ $i === 1 ? 'activo' : '' }}">
                 @endfor
             </div>
@@ -393,7 +394,7 @@
                 @for($i = 0; $i < 10; $i++)
                 <div class="indicador {{ $i === 0 ? 'activo' : '' }}"
                      data-index="{{ $i }}"
-                     onclick="irASlide({{ $i }})">
+                     onclick="irASlide({{ $i }}); iniciarCarrusel();">
                 </div>
                 @endfor
             </div>
@@ -401,24 +402,24 @@
 
         <div class="features">
             <div class="feature">
-                <div class="icono">📷</div>
-                <div class="texto">Inventario<br>con IA</div>
+                <div class="icono">🍨</div>
+                <div class="texto">Caja con<br>fotos</div>
             </div>
             <div class="feature">
-                <div class="icono">🖨</div>
-                <div class="texto">Tickets<br>termicos</div>
+                <div class="icono">🏷</div>
+                <div class="texto">Nombre<br>y turno</div>
             </div>
             <div class="feature">
-                <div class="icono">💳</div>
-                <div class="texto">Control de<br>creditos</div>
+                <div class="icono">👩‍🍳</div>
+                <div class="texto">Pantalla<br>de cocina</div>
             </div>
             <div class="feature">
-                <div class="icono">📊</div>
-                <div class="texto">Reportes<br>de ventas</div>
+                <div class="icono">📲</div>
+                <div class="texto">Nequi y<br>Daviplata</div>
             </div>
             <div class="feature">
-                <div class="icono">📱</div>
-                <div class="texto">PWA<br>movil</div>
+                <div class="icono">🏪</div>
+                <div class="texto">Varias<br>sedes</div>
             </div>
         </div>
 
@@ -463,11 +464,17 @@
         irASlide((slideActual + 1) % totalSlides);
     }
 
-    intervalo = setInterval(siguienteSlide, 4000);
+    function iniciarCarrusel() {
+        clearInterval(intervalo);
+        intervalo = setInterval(siguienteSlide, 5000);
+    }
+
+    iniciarCarrusel();
 
     document.getElementById('carrusel').addEventListener('mouseenter', () => clearInterval(intervalo));
-    document.getElementById('carrusel').addEventListener('mouseleave', () => {
-        intervalo = setInterval(siguienteSlide, 4000);
+    document.getElementById('carrusel').addEventListener('mouseleave', iniciarCarrusel);
+    document.addEventListener('visibilitychange', () => {
+        document.hidden ? clearInterval(intervalo) : iniciarCarrusel();
     });
     </script>
 
