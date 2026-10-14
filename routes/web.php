@@ -16,6 +16,7 @@ use App\Http\Controllers\PlanesController;
 use App\Http\Controllers\SedeActivaController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\CocinaController;
+use App\Http\Controllers\CierreCajaController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MensajeController;
 use App\Http\Middleware\EnsureSuperAdmin;
@@ -71,6 +72,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/pedidos',         [CocinaController::class, 'pedidos'])->name('cocina.pedidos');
         Route::post('/{venta}/estado', [CocinaController::class, 'cambiarEstado'])->name('cocina.estado');
         Route::get('/{venta}/comanda', [CocinaController::class, 'comanda'])->name('cocina.comanda');
+    });
+
+    // Cierre de caja por sede (historial solo gerentes — validado en CierreCajaController)
+    Route::prefix('caja')->group(function () {
+        Route::get('/cierre',                     [CierreCajaController::class, 'crear'])->name('caja.cierre');
+        Route::post('/cierre',                    [CierreCajaController::class, 'store'])->name('caja.cerrar');
+        Route::get('/cierres',                    [CierreCajaController::class, 'index'])->name('caja.cierres');
+        Route::get('/cierres/{cierre}/imprimir',  [CierreCajaController::class, 'imprimir'])->name('caja.imprimir');
     });
 
     Route::prefix('inventario')->group(function () {

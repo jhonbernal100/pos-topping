@@ -276,6 +276,11 @@
                 Cocina
             </a>
 
+            <a href="/caja/cierre"
+               class="{{ request()->is('caja*') ? 'activo' : '' }}">
+                Cierre de caja
+            </a>
+
             <a href="/inventario/capturar"
                class="{{ request()->is('inventario/capturar') ? 'activo' : '' }}">
                 Agregar inventario
