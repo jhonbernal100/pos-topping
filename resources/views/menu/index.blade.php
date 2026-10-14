@@ -17,6 +17,10 @@
             </p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="/menu/recetas"
+               style="padding:10px 16px;background:#fff;color:#000;border:1px solid #ddd;border-radius:8px;text-decoration:none;font-size:14px;white-space:nowrap;">
+                Recetas
+            </a>
             <a href="/menu/apariencia"
                style="padding:10px 16px;background:#fff;color:#000;border:1px solid #ddd;border-radius:8px;text-decoration:none;font-size:14px;white-space:nowrap;">
                 Apariencia

@@ -19,6 +19,7 @@ use App\Http\Controllers\CocinaController;
 use App\Http\Controllers\CierreCajaController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MensajeController;
 use App\Http\Middleware\EnsureSuperAdmin;
@@ -184,6 +185,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/productos/{producto}/foto',          [MenuController::class, 'subirFoto'])->name('menu.subirFoto');
         Route::delete('/productos/{producto}/foto',        [MenuController::class, 'quitarFoto'])->name('menu.quitarFoto');
         Route::post('/modificadores/{modificador}/toggle', [MenuController::class, 'toggleModificador'])->name('menu.toggleModificador');
+        Route::get('/recetas',                             [RecetaController::class, 'index'])->name('menu.recetas');
+        Route::post('/recetas/productos/{producto}',       [RecetaController::class, 'guardarProducto'])->name('menu.recetaProducto');
+        Route::post('/recetas/opciones/{modificador}',     [RecetaController::class, 'guardarOpcion'])->name('menu.recetaOpcion');
     });
 
     // Panel Avanzas Digital — solo superadmin
