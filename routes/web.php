@@ -17,6 +17,8 @@ use App\Http\Controllers\SedeActivaController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\CocinaController;
 use App\Http\Controllers\CierreCajaController;
+use App\Http\Controllers\InsumoController;
+use App\Http\Controllers\CompraController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MensajeController;
 use App\Http\Middleware\EnsureSuperAdmin;
@@ -80,6 +82,26 @@ Route::middleware('auth')->group(function () {
         Route::post('/cierre',                    [CierreCajaController::class, 'store'])->name('caja.cerrar');
         Route::get('/cierres',                    [CierreCajaController::class, 'index'])->name('caja.cierres');
         Route::get('/cierres/{cierre}/imprimir',  [CierreCajaController::class, 'imprimir'])->name('caja.imprimir');
+    });
+
+    // Insumos por sede (contar y editar solo gerentes — validado en InsumoController)
+    Route::prefix('insumos')->group(function () {
+        Route::get('/',                    [InsumoController::class, 'index'])->name('insumos.index');
+        Route::get('/crear',               [InsumoController::class, 'crear'])->name('insumos.crear');
+        Route::post('/',                   [InsumoController::class, 'store'])->name('insumos.store');
+        Route::get('/{insumo}/editar',     [InsumoController::class, 'editar'])->name('insumos.editar');
+        Route::post('/{insumo}/actualizar',[InsumoController::class, 'actualizar'])->name('insumos.actualizar');
+        Route::post('/{insumo}/ajuste',    [InsumoController::class, 'ajuste'])->name('insumos.ajuste');
+        Route::get('/{insumo}/movimientos',[InsumoController::class, 'movimientos'])->name('insumos.movimientos');
+    });
+
+    // Facturas de proveedores (solo gerentes — validado en CompraController)
+    Route::prefix('compras')->group(function () {
+        Route::get('/',                 [CompraController::class, 'index'])->name('compras.index');
+        Route::get('/crear',            [CompraController::class, 'crear'])->name('compras.crear');
+        Route::post('/',                [CompraController::class, 'store'])->name('compras.store');
+        Route::get('/{compra}',         [CompraController::class, 'ver'])->whereNumber('compra')->name('compras.ver');
+        Route::post('/{compra}/anular', [CompraController::class, 'anular'])->whereNumber('compra')->name('compras.anular');
     });
 
     Route::prefix('inventario')->group(function () {

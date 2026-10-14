@@ -281,14 +281,9 @@
                 Cierre de caja
             </a>
 
-            <a href="/inventario/capturar"
-               class="{{ request()->is('inventario/capturar') ? 'activo' : '' }}">
-                Agregar inventario
-            </a>
-
-            <a href="/inventario/crear-manual"
-               class="{{ request()->is('inventario/crear-manual') ? 'activo' : '' }}">
-                Crear manual
+            <a href="/insumos"
+               class="{{ request()->is('insumos*') ? 'activo' : '' }}">
+                Insumos
             </a>
 
             <a href="/clientes"
@@ -298,9 +293,9 @@
 
             {{-- Propietario y gerentes de sede --}}
             @if($usuarioActual->rol === 'dueno')
-                <a href="/inventario"
-                   class="{{ request()->is('inventario') && !request()->is('inventario/capturar') && !request()->is('inventario/crear-manual') ? 'activo' : '' }}">
-                    Inventario
+                <a href="/compras"
+                   class="{{ request()->is('compras*') ? 'activo' : '' }}">
+                    Compras
                 </a>
                 <a href="/proveedores"
                    class="{{ request()->is('proveedores*') ? 'activo' : '' }}">

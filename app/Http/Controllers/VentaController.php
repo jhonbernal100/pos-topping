@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\CategoriaMenu;
+use App\Models\InsumoStock;
 use App\Models\Producto;
+use App\Models\RecetaItem;
 use App\Models\Sede;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
@@ -40,8 +42,12 @@ class VentaController extends Controller
             ])
             ->get();
 
+        // Reventa con receta (ej: agua): su existencia sale de los insumos de esta sede
+        $reventaIds   = $categorias->flatMap(fn ($c) => $c->productos)->where('tipo_menu', 'reventa')->pluck('id');
+        $stockReventa = $this->stockReventaPorInsumos($reventaIds->all(), (int) session('sede_id'));
+
         // Menú listo para la pantalla: solo lo disponible hoy en el local
-        $menu = $categorias->map(function ($categoria) {
+        $menu = $categorias->map(function ($categoria) use ($stockReventa) {
             $productos = $categoria->productos
                 ->filter(fn ($p) => $p->disponiblePara('local'))
                 ->map(fn ($p) => [
@@ -51,7 +57,7 @@ class VentaController extends Controller
                     'foto'        => $p->foto ? asset('storage/' . $p->foto) : null,
                     'precio'      => (int) $p->precio_venta,
                     'tipo'        => $p->tipo_menu,
-                    'stock'       => (int) $p->stock,
+                    'stock'       => array_key_exists($p->id, $stockReventa) ? $stockReventa[$p->id] : (int) $p->stock,
                     'variantes'   => $p->variantesActivas->map(fn ($v) => [
                         'id' => $v->id, 'nombre' => $v->nombre, 'precio' => (int) $v->precio,
                     ])->values(),
@@ -137,9 +143,19 @@ class VentaController extends Controller
         try {
             $venta = DB::transaction(function () use ($data, $items, $pagos, $total, $recibido, $cambio, $sedeId, $inventario) {
 
-                // Stock de productos de reventa (ej: agua)
-                foreach ($items as $it) {
-                    if ($it['producto']->tipo_menu !== 'reventa') {
+                // Reventa con receta: se controla con los insumos de la sede
+                $reventa   = $items->filter(fn ($i) => $i['producto']->tipo_menu === 'reventa');
+                $conReceta = RecetaItem::whereIn('producto_id', $reventa->map(fn ($i) => $i['producto']->id)->unique()->all())
+                    ->pluck('producto_id')->unique()->flip();
+
+                $this->verificarInsumosReventa(
+                    $inventario->consumoDeItems($reventa->filter(fn ($i) => isset($conReceta[$i['producto']->id]))->values()),
+                    $sedeId
+                );
+
+                // Reventa sin receta: stock propio del producto (esquema anterior)
+                foreach ($reventa as $it) {
+                    if (isset($conReceta[$it['producto']->id])) {
                         continue;
                     }
 
@@ -254,10 +270,13 @@ class VentaController extends Controller
         }
 
         DB::transaction(function () use ($venta, $inventario) {
-            // Devolver stock de productos de reventa
+            // Devolver stock de productos de reventa sin receta (los de receta vuelven por insumos)
+            $conReceta = RecetaItem::whereIn('producto_id', $venta->detalles->pluck('producto_id')->unique()->all())
+                ->pluck('producto_id')->unique()->flip();
+
             foreach ($venta->detalles as $detalle) {
                 $producto = Producto::withTrashed()->find($detalle->producto_id);
-                if ($producto && $producto->tipo_menu === 'reventa') {
+                if ($producto && $producto->tipo_menu === 'reventa' && !isset($conReceta[$producto->id])) {
                     $producto->increment('stock', $detalle->cantidad);
                 }
             }
@@ -274,6 +293,71 @@ class VentaController extends Controller
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
+
+    /**
+     * Unidades vendibles de productos de reventa que tienen receta, según los insumos de la sede.
+     * Devuelve [producto_id => unidades]. Si algún insumo aún no se ha contado en la sede,
+     * no se limita la venta (9999) para no bloquear la caja antes del primer conteo.
+     */
+    private function stockReventaPorInsumos(array $productoIds, int $sedeId): array
+    {
+        if (!$productoIds || !$sedeId) {
+            return [];
+        }
+
+        $recetas = RecetaItem::whereIn('producto_id', $productoIds)->whereNull('variante_id')->get()->groupBy('producto_id');
+        if ($recetas->isEmpty()) {
+            return [];
+        }
+
+        $stocks = InsumoStock::where('sede_id', $sedeId)
+            ->whereIn('insumo_id', $recetas->flatten()->pluck('insumo_id')->unique()->all())
+            ->pluck('cantidad', 'insumo_id');
+
+        $resultado = [];
+        foreach ($recetas as $productoId => $items) {
+            $unidades = null;
+            foreach ($items as $r) {
+                if ($r->cantidad <= 0) {
+                    continue;
+                }
+                if (!$stocks->has($r->insumo_id)) {
+                    $unidades = null;   // sin conteo: no limitar
+                    break;
+                }
+                $posibles = (int) floor((float) $stocks[$r->insumo_id] / $r->cantidad);
+                $unidades = $unidades === null ? $posibles : min($unidades, $posibles);
+            }
+            $resultado[$productoId] = $unidades ?? 9999;
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Verifica con bloqueo que la sede tenga los insumos de los productos de reventa con receta.
+     * Insumos que aún no se han contado en la sede no bloquean la venta.
+     */
+    private function verificarInsumosReventa(array $consumo, int $sedeId): void
+    {
+        ksort($consumo);   // mismo orden de bloqueo que InventarioService
+
+        foreach ($consumo as $insumoId => $cantidad) {
+            $stock = InsumoStock::with('insumo')
+                ->where('insumo_id', $insumoId)
+                ->where('sede_id', $sedeId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($stock && $stock->cantidad < $cantidad) {
+                $nombre = $stock->insumo?->nombre ?? 'el producto';
+                $hay    = max(0, (int) floor($stock->cantidad));
+                throw new InvalidArgumentException(
+                    "No hay suficiente {$nombre} en esta sede. Disponibles: {$hay}. Si llegó mercancía, regístrala en Compras."
+                );
+            }
+        }
+    }
 
     // Consecutivo diario por sede. La fila queda bloqueada hasta el final
     // de la transacción, así dos cajas nunca reciben el mismo número.
