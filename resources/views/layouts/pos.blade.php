@@ -41,6 +41,11 @@
 
         .toolbar::-webkit-scrollbar { display: none; }
 
+        /* En computador los botones bajan a otra fila en vez de esconderse a la derecha */
+        @media (min-width: 768px) {
+            .toolbar { flex-wrap: wrap; overflow-x: visible; }
+        }
+
         .toolbar a {
             color: #fff;
             text-decoration: none;
