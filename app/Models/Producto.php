@@ -72,6 +72,11 @@ class Producto extends Model
             ->orderByPivot('orden');
     }
 
+    public function recetaItems()
+    {
+        return $this->hasMany(RecetaItem::class);
+    }
+
     // ---------------------------------------------------------------
     // Scopes
     // ---------------------------------------------------------------
@@ -89,7 +94,7 @@ class Producto extends Model
     // Reglas de disponibilidad
     // ---------------------------------------------------------------
 
-    // Ej: torta de chocolate solo viernes a domingo → [5, 6, 7]
+    // Ej: Roll Cake solo sábado y domingo → [6, 7]
     public function disponibleHoy(): bool
     {
         if (!$this->activo) {
@@ -103,7 +108,7 @@ class Producto extends Model
         return in_array(now()->dayOfWeekIso, $this->dias_disponibles, true);
     }
 
-    // $canal: 'local' o 'domicilio' (ej: la Nèbula no va a domicilio)
+    // $canal: 'local' o 'domicilio' (ej: la Nébula no va a domicilio)
     public function disponibleEnCanal(string $canal): bool
     {
         return $canal === 'domicilio' ? $this->disponible_domicilio : $this->disponible_local;

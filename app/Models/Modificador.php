@@ -22,6 +22,11 @@ class Modificador extends Model
         return $this->belongsTo(GrupoModificador::class, 'grupo_id');
     }
 
+    public function insumos()
+    {
+        return $this->hasMany(ModificadorInsumo::class);
+    }
+
     // Precio de la opción adicional: el suyo propio o el del grupo
     public function precioAdicional(): int
     {

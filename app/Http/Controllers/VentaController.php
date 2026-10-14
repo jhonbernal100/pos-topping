@@ -8,6 +8,7 @@ use App\Models\Sede;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
 use App\Services\CalculadoraPedido;
+use App\Services\InventarioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -82,7 +83,7 @@ class VentaController extends Controller
         return view('ventas.crear', compact('menu', 'sede', 'tenant'));
     }
 
-    public function store(Request $request, CalculadoraPedido $calculadora)
+    public function store(Request $request, CalculadoraPedido $calculadora, InventarioService $inventario)
     {
         $data = $request->validate([
             'nombre_pedido'           => 'required|string|max:60',
@@ -134,7 +135,7 @@ class VentaController extends Controller
 
         // 3. Registrar todo en una sola transacción
         try {
-            $venta = DB::transaction(function () use ($data, $items, $pagos, $total, $recibido, $cambio, $sedeId) {
+            $venta = DB::transaction(function () use ($data, $items, $pagos, $total, $recibido, $cambio, $sedeId, $inventario) {
 
                 // Stock de productos de reventa (ej: agua)
                 foreach ($items as $it) {
@@ -211,6 +212,9 @@ class VentaController extends Controller
                     }
                 }
 
+                // Descontar insumos de la sede según recetas y opciones elegidas
+                $inventario->descontarVenta($venta, $inventario->consumoDeItems($items));
+
                 return $venta;
             });
         } catch (InvalidArgumentException $e) {
@@ -239,7 +243,7 @@ class VentaController extends Controller
         abort(404);
     }
 
-    public function anular(Venta $venta)
+    public function anular(Venta $venta, InventarioService $inventario)
     {
         if (auth()->user()->rol !== 'dueno') {
             return $this->error('Solo un gerente o el propietario puede anular ventas.', 403);
@@ -249,7 +253,7 @@ class VentaController extends Controller
             return $this->error('La venta ya está anulada.');
         }
 
-        DB::transaction(function () use ($venta) {
+        DB::transaction(function () use ($venta, $inventario) {
             // Devolver stock de productos de reventa
             foreach ($venta->detalles as $detalle) {
                 $producto = Producto::withTrashed()->find($detalle->producto_id);
@@ -257,6 +261,9 @@ class VentaController extends Controller
                     $producto->increment('stock', $detalle->cantidad);
                 }
             }
+
+            // Devolver insumos a la sede
+            $inventario->revertirVenta($venta);
 
             $venta->update(['estado' => 'anulada']);
         });
