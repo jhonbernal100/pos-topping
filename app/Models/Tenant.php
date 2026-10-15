@@ -30,7 +30,7 @@ class Tenant extends Model
     // Límites de la demo de 30 días (null = ilimitado en planes pagos)
     public const TRIAL_MAX_SEDES             = 2;
     public const TRIAL_MAX_USUARIOS_POR_SEDE = 2;
-    public const TRIAL_MAX_PRODUCTOS         = 250;
+    public const TRIAL_MAX_PRODUCTOS         = 20;
 
     public function tieneAcceso(): bool
     {

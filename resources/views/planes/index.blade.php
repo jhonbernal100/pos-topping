@@ -344,7 +344,7 @@
         <hr class="plan-divider">
         <ul class="plan-features">
             <li class="seccion-titulo">Limites</li>
-            <li><span class="check">+</span> Hasta 250 productos</li>
+            <li><span class="check">+</span> Hasta 20 productos</li>
             <li><span class="check">+</span> Hasta 2 sedes</li>
             <li><span class="check">+</span> 2 usuarios por sede</li>
             <li class="seccion-titulo">Punto de venta</li>
@@ -353,6 +353,7 @@
             <li><span class="check">+</span> Comandas y pantalla de cocina</li>
             <li><span class="check">+</span> Efectivo, Nequi, Daviplata y tarjeta</li>
             <li><span class="check">+</span> Tiquete POS y cierre de caja</li>
+            <li><span class="cross">-</span> Bot de domicilios por WhatsApp</li>
             <li class="seccion-titulo">Inventario</li>
             <li><span class="check">+</span> Insumos por sede con alertas</li>
             <li><span class="check">+</span> Recetas que descuentan cada venta</li>
@@ -383,6 +384,7 @@
             <li><span class="check">+</span> Comandas y pantalla de cocina</li>
             <li><span class="check">+</span> Efectivo, Nequi, Daviplata y tarjeta</li>
             <li><span class="check">+</span> Tiquete POS y cierre de caja</li>
+            <li><span class="cross">-</span> Bot de domicilios por WhatsApp</li>
             <li class="seccion-titulo">Inventario y reportes</li>
             <li><span class="check">+</span> Insumos por sede con alertas</li>
             <li><span class="check">+</span> Recetas, costos y margen por producto</li>
@@ -416,6 +418,8 @@
             <li><span class="check">+</span> Todos los reportes PDF</li>
             <li><span class="check">+</span> Kardex y estado financiero</li>
             <li class="seccion-titulo">Beneficios exclusivos</li>
+            <li><span class="check">+</span> <strong>Bot de domicilios por WhatsApp</strong></li>
+            <li style="font-size:12px;color:#888;padding-left:18px;">Pedidos, pago por Nequi o Daviplata y avisos de "en preparación" y "salió tu domicilio"</li>
             <li><span class="check">+</span> Capacitacion virtual incluida</li>
             <li><span class="check">+</span> Soporte prioritario 24/7</li>
             <li><span class="check">+</span> Renovacion automatica</li>
@@ -457,7 +461,7 @@
             </tr>
             <tr>
                 <td>Productos</td>
-                <td>250</td>
+                <td>20</td>
                 <td>Ilimitados</td>
                 <td>Ilimitados</td>
             </tr>
@@ -501,6 +505,12 @@
                 <td>Estado financiero</td>
                 <td><span class="no">-</span></td>
                 <td><span class="si">+</span></td>
+                <td><span class="si">+</span></td>
+            </tr>
+            <tr>
+                <td>Bot de domicilios por WhatsApp</td>
+                <td><span class="no">-</span></td>
+                <td><span class="no">-</span></td>
                 <td><span class="si">+</span></td>
             </tr>
             <tr>
@@ -562,8 +572,8 @@
     </div>
 
     <div class="faq-item">
-        <h4>Puedo recibir pedidos por WhatsApp?</h4>
-        <p>Si, con el bot de pedidos a domicilio: un modulo adicional que se contrata aparte y no esta incluido en el trial. Contactanos por WhatsApp para conocerlo.</p>
+        <h4>Puedo recibir pedidos a domicilio por WhatsApp?</h4>
+        <p>Si, con el bot de domicilios, incluido solo en el plan anual. El cliente hace su pedido por WhatsApp, paga por Nequi o Daviplata y recibe avisos cuando su pedido esta en preparacion y cuando sale el domicilio. El pedido llega a la caja y a la cocina de la sede mas cercana. No esta incluido en el trial ni en el plan trimestral.</p>
     </div>
 
     <div class="faq-item">
