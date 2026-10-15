@@ -418,7 +418,7 @@
             <li><span class="check">+</span> Todos los reportes PDF</li>
             <li><span class="check">+</span> Kardex y estado financiero</li>
             <li class="seccion-titulo">Beneficios exclusivos</li>
-            <li><span class="check">+</span> <strong>Bot de domicilios por WhatsApp</strong></li>
+            <li><span class="check">+</span> <strong>Bot de domicilios por WhatsApp</strong> <span style="font-size:10px;font-weight:bold;background:#fff3cd;color:#856404;padding:2px 7px;border-radius:8px;margin-left:4px;white-space:nowrap;">Próximamente</span></li>
             <li style="font-size:12px;color:#888;padding-left:18px;">Pedidos, pago por Nequi o Daviplata y avisos de "en preparación" y "salió tu domicilio"</li>
             <li><span class="check">+</span> Capacitacion virtual incluida</li>
             <li><span class="check">+</span> Soporte prioritario 24/7</li>
@@ -508,7 +508,7 @@
                 <td><span class="si">+</span></td>
             </tr>
             <tr>
-                <td>Bot de domicilios por WhatsApp</td>
+                <td>Bot de domicilios por WhatsApp <span style="font-size:10px;font-weight:bold;background:#fff3cd;color:#856404;padding:2px 7px;border-radius:8px;margin-left:4px;white-space:nowrap;">Próximamente</span></td>
                 <td><span class="no">-</span></td>
                 <td><span class="no">-</span></td>
                 <td><span class="si">+</span></td>
@@ -573,7 +573,7 @@
 
     <div class="faq-item">
         <h4>Puedo recibir pedidos a domicilio por WhatsApp?</h4>
-        <p>Si, con el bot de domicilios, incluido solo en el plan anual. El cliente hace su pedido por WhatsApp, paga por Nequi o Daviplata y recibe avisos cuando su pedido esta en preparacion y cuando sale el domicilio. El pedido llega a la caja y a la cocina de la sede mas cercana. No esta incluido en el trial ni en el plan trimestral.</p>
+        <p>Muy pronto. El bot de domicilios estara incluido solo en el plan anual. El cliente hace su pedido por WhatsApp, paga por Nequi o Daviplata y recibe avisos cuando su pedido esta en preparacion y cuando sale el domicilio. El pedido llega a la caja y a la cocina de la sede mas cercana. No esta incluido en el trial ni en el plan trimestral.</p>
     </div>
 
     <div class="faq-item">
