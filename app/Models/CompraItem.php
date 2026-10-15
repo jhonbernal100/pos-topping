@@ -30,9 +30,21 @@ class CompraItem extends Model
         return $this->belongsTo(Insumo::class);
     }
 
-    // Costo por unidad base (g / ml / und)
+    // Costo por unidad base (g / ml / und).
+    // Si la compra suma impuestos al costo, se reparten en proporción al valor de cada línea.
     public function costoUnitario(): float
     {
-        return $this->cantidad > 0 ? $this->costo_total / $this->cantidad : 0;
+        if ($this->cantidad <= 0) {
+            return 0;
+        }
+
+        $costo  = (float) $this->costo_total;
+        $compra = $this->compra;
+
+        if ($compra && $compra->impuestos_al_costo && $compra->impuestos > 0 && $compra->subtotal > 0) {
+            $costo *= 1 + $compra->impuestos / $compra->subtotal;
+        }
+
+        return $costo / $this->cantidad;
     }
 }

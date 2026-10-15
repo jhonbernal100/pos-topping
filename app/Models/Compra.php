@@ -11,7 +11,7 @@ class Compra extends Model
 
     protected $fillable = [
         'tenant_id', 'sede_id', 'proveedor_id', 'user_id', 'numero_factura', 'fecha',
-        'subtotal', 'impuestos', 'total', 'estado', 'origen', 'foto', 'lectura_ia', 'notas',
+        'subtotal', 'impuestos', 'impuestos_al_costo', 'total', 'total_factura', 'estado', 'origen', 'foto', 'lectura_ia', 'notas',
     ];
 
     protected $casts = [
@@ -20,6 +20,8 @@ class Compra extends Model
         'impuestos'  => 'integer',
         'total'      => 'integer',
         'lectura_ia' => 'array',
+        'impuestos_al_costo' => 'boolean',
+        'total_factura'      => 'integer',
     ];
 
     protected static function booted(): void

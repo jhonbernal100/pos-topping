@@ -21,6 +21,12 @@
             <div style="font-size:13px;color:#888;line-height:1.6;">
                 {{ $compra->proveedor?->nombre ?? 'Sin proveedor' }} · {{ $compra->fecha->format('d/m/Y') }} · Sede {{ $compra->sede?->nombre }}<br>
                 Registrada por {{ $compra->usuario?->name ?? '—' }} el {{ $compra->created_at->format('d/m/Y h:i a') }}
+                @if($compra->origen === 'ia')
+                    · <span style="color:#27A88A;font-weight:bold;">Leída con IA</span>
+                @endif
+                @if($compra->foto)
+                    · <a href="/compras/{{ $compra->id }}/archivo" target="_blank" rel="noopener" style="color:#000;">Ver factura original</a>
+                @endif
             </div>
         </div>
         @if($compra->estado === 'registrada')
@@ -50,13 +56,21 @@
                     @php $u = $it->insumo?->unidad ?? 'und'; @endphp
                     <tr style="border-bottom:1px solid #eee;">
                         <td style="padding:12px;font-size:13px;color:#555;">{{ $it->descripcion }}</td>
-                        <td style="padding:12px;font-size:14px;font-weight:bold;">{{ $it->insumo?->nombre ?? '—' }}</td>
+                        <td style="padding:12px;font-size:14px;font-weight:bold;">
+                            @if($it->insumo_id)
+                                {{ $it->insumo?->nombre ?? '—' }}
+                            @else
+                                <span style="font-weight:normal;color:#888;">No es inventario</span>
+                            @endif
+                        </td>
                         <td style="padding:12px;text-align:right;font-size:13px;">
                             {{ rtrim(rtrim(number_format($it->cantidad_factura, 3, ',', '.'), '0'), ',') }} {{ $it->unidad_factura }}
                         </td>
-                        <td style="padding:12px;text-align:right;font-size:13px;">{{ \App\Models\Insumo::formatear((float) $it->cantidad, $u) }}</td>
+                        <td style="padding:12px;text-align:right;font-size:13px;">{{ $it->insumo_id ? \App\Models\Insumo::formatear((float) $it->cantidad, $u) : '—' }}</td>
                         <td style="padding:12px;text-align:right;font-size:12px;color:#555;white-space:nowrap;">
-                            @if($u === 'und')
+                            @if(!$it->insumo_id)
+                                —
+                            @elseif($u === 'und')
                                 {{ $dinero($it->costoUnitario()) }}/und
                             @else
                                 {{ $dinero($it->costoUnitario() * 1000) }}/{{ $u === 'g' ? 'kg' : 'L' }}
@@ -69,9 +83,16 @@
             <tfoot>
                 <tr><td colspan="5" style="padding:8px 12px;text-align:right;color:#555;">Subtotal</td><td style="padding:8px 12px;text-align:right;">{{ $dinero($compra->subtotal) }}</td></tr>
                 @if($compra->impuestos > 0)
-                    <tr><td colspan="5" style="padding:8px 12px;text-align:right;color:#555;">Impuestos</td><td style="padding:8px 12px;text-align:right;">{{ $dinero($compra->impuestos) }}</td></tr>
+                    <tr><td colspan="5" style="padding:8px 12px;text-align:right;color:#555;">
+                        Impuestos{{ $compra->impuestos_al_costo ? ' (sumados al costo de los insumos)' : '' }}
+                    </td><td style="padding:8px 12px;text-align:right;">{{ $dinero($compra->impuestos) }}</td></tr>
                 @endif
                 <tr><td colspan="5" style="padding:10px 12px;text-align:right;font-weight:bold;">Total</td><td style="padding:10px 12px;text-align:right;font-weight:bold;font-size:18px;">{{ $dinero($compra->total) }}</td></tr>
+                @if($compra->total_factura !== null && abs($compra->total_factura - $compra->total) > 2)
+                    <tr><td colspan="6" style="padding:8px 12px;text-align:right;font-size:12px;color:#856404;">
+                        La factura original dice {{ $dinero($compra->total_factura) }}.
+                    </td></tr>
+                @endif
             </tfoot>
         </table>
     </div>

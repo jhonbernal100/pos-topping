@@ -9,9 +9,13 @@ use App\Models\InsumoAlias;
 use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Services\InventarioService;
+use App\Services\LectorFacturaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use RuntimeException;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 
@@ -51,6 +55,55 @@ class CompraController extends Controller
         return view('compras.crear', compact('sede', 'proveedores', 'insumos', 'categorias'));
     }
 
+    // Lee una factura (PDF o foto) con IA y devuelve los datos para llenar el formulario
+    public function leer(Request $request, LectorFacturaService $lector)
+    {
+        $this->soloGerente();
+
+        $request->validate([
+            'archivo' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,webp',
+        ], [
+            'archivo.required' => 'Elige el PDF o la foto de la factura.',
+            'archivo.mimes'    => 'Sube un PDF o una foto (JPG, PNG o WEBP).',
+            'archivo.max'      => 'El archivo pesa más de 10 MB.',
+        ]);
+
+        $archivo = $request->file('archivo');
+
+        try {
+            $lectura = $lector->leer($archivo);
+        } catch (RuntimeException $e) {
+            return $this->error($e->getMessage());
+        }
+
+        // Guardar el archivo y la lectura mientras se confirma la compra
+        $ext   = strtolower($archivo->getClientOriginalExtension() ?: $archivo->extension());
+        $token = Str::uuid() . '.' . ($ext === 'jpeg' ? 'jpg' : $ext);
+        $dir   = $this->dirTemporal();
+
+        Storage::disk('local')->putFileAs($dir, $archivo, $token);
+        Storage::disk('local')->put($dir . '/' . $token . '.json', json_encode($lectura, JSON_UNESCAPED_UNICODE));
+
+        return response()->json([
+            'success' => true,
+            'token'   => $token,
+            'datos'   => $lector->preparar($lectura),
+        ]);
+    }
+
+    // Ver el PDF o la foto original de una compra leída con IA
+    public function archivo(Compra $compra)
+    {
+        $this->soloGerente();
+        $this->verificarSede($compra);
+
+        if (!$compra->foto || !Storage::disk('local')->exists($compra->foto)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($compra->foto);
+    }
+
     public function store(Request $request, InventarioService $inventario)
     {
         $this->soloGerente();
@@ -64,20 +117,26 @@ class CompraController extends Controller
 
         $data = $request->validate([
             'proveedor_id'             => ['nullable', 'integer', Rule::in($this->proveedores()->pluck('id')->all())],
+            'proveedor_nuevo.nombre'   => 'nullable|string|max:191',
+            'proveedor_nuevo.nit'      => 'nullable|string|max:20',
+            'impuestos_al_costo'       => 'nullable|boolean',
+            'total_factura'            => 'nullable|integer|min:0',
+            'archivo_token'            => ['nullable', 'string', 'regex:/^[0-9a-f-]{36}\.(pdf|jpg|png|webp)$/'],
             'numero_factura'           => 'nullable|string|max:60',
             'fecha'                    => 'required|date|before_or_equal:today',
             'impuestos'                => 'nullable|integer|min:0',
             'notas'                    => 'nullable|string|max:500',
             'items'                    => 'required|array|min:1|max:80',
-            'items.*.insumo_id'        => ['required', 'integer', Rule::exists('insumos', 'id')->where('tenant_id', $tenantId)],
-            'items.*.descripcion'      => 'nullable|string|max:191',
+            // insumo_id vacío = no es inventario (domicilio, flete, servicio)
+            'items.*.insumo_id'        => ['nullable', 'integer', Rule::exists('insumos', 'id')->where('tenant_id', $tenantId)],
+            'items.*.descripcion'      => 'nullable|required_without:items.*.insumo_id|string|max:191',
             'items.*.cantidad_factura' => 'required|numeric|gt:0|max:1000000',
             'items.*.unidad_factura'   => 'nullable|string|max:30',
             'items.*.factor'           => 'required|numeric|gt:0|max:1000000',
             'items.*.costo_total'      => 'required|integer|min:0|max:1000000000',
         ], [
             'items.required'          => 'Agrega al menos un insumo a la factura.',
-            'items.*.insumo_id.required' => 'Elige el insumo de cada línea.',
+            'items.*.descripcion.required_without' => 'Escribe la descripción de las líneas que no son inventario.',
             'fecha.before_or_equal'   => 'La fecha de la factura no puede ser futura.',
         ]);
 
@@ -93,12 +152,37 @@ class CompraController extends Controller
             }
         }
 
-        $insumos  = Insumo::whereIn('id', collect($data['items'])->pluck('insumo_id'))->get()->keyBy('id');
+        $insumos  = Insumo::whereIn('id', collect($data['items'])->pluck('insumo_id')->filter())->get()->keyBy('id');
+
+        // Archivo leído con IA (queda guardado con la compra)
+        $token   = $data['archivo_token'] ?? null;
+        $dirTmp  = $this->dirTemporal();
+        $lectura = null;
+        if ($token) {
+            if (!Storage::disk('local')->exists($dirTmp . '/' . $token)) {
+                return $this->error('El archivo de la factura ya no está disponible. Vuelve a leerla.');
+            }
+            $lectura = json_decode((string) Storage::disk('local')->get($dirTmp . '/' . $token . '.json'), true);
+        }
         $subtotal = (int) collect($data['items'])->sum('costo_total');
         $impuesto = (int) ($data['impuestos'] ?? 0);
 
         try {
-            $compra = DB::transaction(function () use ($data, $tenantId, $sedeId, $insumos, $subtotal, $impuesto, $inventario) {
+            $compra = DB::transaction(function () use ($data, $tenantId, $sedeId, $insumos, $subtotal, $impuesto, $inventario, $token, $lectura) {
+                // Proveedor nuevo leído de la factura
+                if (empty($data['proveedor_id']) && !empty(trim($data['proveedor_nuevo']['nombre'] ?? ''))) {
+                    $data['proveedor_id'] = $this->crearProveedor(
+                        $tenantId,
+                        trim($data['proveedor_nuevo']['nombre']),
+                        trim($data['proveedor_nuevo']['nit'] ?? '') ?: null
+                    );
+
+                    if (!empty($data['numero_factura']) && Compra::where('proveedor_id', $data['proveedor_id'])
+                            ->where('numero_factura', trim($data['numero_factura']))->where('estado', 'registrada')->exists()) {
+                        throw new InvalidArgumentException('Esa factura de ese proveedor ya fue registrada.');
+                    }
+                }
+
                 $compra = Compra::create([
                     'tenant_id'      => $tenantId,
                     'sede_id'        => $sedeId,
@@ -108,19 +192,22 @@ class CompraController extends Controller
                     'fecha'          => $data['fecha'],
                     'subtotal'       => $subtotal,
                     'impuestos'      => $impuesto,
+                    'impuestos_al_costo' => (bool) ($data['impuestos_al_costo'] ?? false),
                     'total'          => $subtotal + $impuesto,
+                    'total_factura'  => $data['total_factura'] ?? null,
                     'estado'         => 'registrada',
-                    'origen'         => 'manual',
+                    'origen'         => $token ? 'ia' : 'manual',
+                    'lectura_ia'     => $lectura,
                     'notas'          => $data['notas'] ?? null,
                 ]);
 
                 foreach ($data['items'] as $it) {
-                    $insumo      = $insumos[$it['insumo_id']];
+                    $insumo      = !empty($it['insumo_id']) ? $insumos[$it['insumo_id']] : null;
                     $descripcion = trim($it['descripcion'] ?? '') ?: $insumo->nombre;
 
                     CompraItem::create([
                         'compra_id'        => $compra->id,
-                        'insumo_id'        => $insumo->id,
+                        'insumo_id'        => $insumo?->id,
                         'descripcion'      => $descripcion,
                         'cantidad_factura' => (float) $it['cantidad_factura'],
                         'unidad_factura'   => $it['unidad_factura'] ?? null,
@@ -130,7 +217,7 @@ class CompraController extends Controller
                     ]);
 
                     // Aprender cómo llama el proveedor a este insumo (lo usará la lectura con IA)
-                    if (!empty($it['descripcion'])) {
+                    if ($insumo && !empty($it['descripcion'])) {
                         InsumoAlias::updateOrCreate(
                             [
                                 'tenant_id'    => $tenantId,
@@ -140,6 +227,14 @@ class CompraController extends Controller
                             ['insumo_id' => $insumo->id, 'factor' => (float) $it['factor']]
                         );
                     }
+                }
+
+                // Guardar el PDF o la foto junto a la compra
+                if ($token) {
+                    $destino = 'compras/' . $tenantId . '/' . $compra->id . '-' . $token;
+                    Storage::disk('local')->move($this->dirTemporal() . '/' . $token, $destino);
+                    Storage::disk('local')->delete($this->dirTemporal() . '/' . $token . '.json');
+                    $compra->update(['foto' => $destino]);
                 }
 
                 $compra->load('proveedor');
@@ -194,6 +289,31 @@ class CompraController extends Controller
     }
 
     // ---------------------------------------------------------------
+
+    private function dirTemporal(): string
+    {
+        return 'compras/tmp/' . (int) session('tenant_id');
+    }
+
+    // Busca el proveedor por NIT antes de crearlo, para no duplicarlo
+    private function crearProveedor(int $tenantId, string $nombre, ?string $nit): int
+    {
+        if ($nit) {
+            $digitos = preg_replace('/\D/', '', $nit);
+            $existente = Proveedor::query()->withoutGlobalScopes()->where('tenant_id', $tenantId)->get(['id', 'nit'])
+                ->first(fn ($p) => $digitos !== '' && preg_replace('/\D/', '', (string) $p->nit) === $digitos);
+            if ($existente) {
+                return $existente->id;
+            }
+        }
+
+        return Proveedor::create([
+            'tenant_id' => $tenantId,
+            'nombre'    => mb_substr($nombre, 0, 191),
+            'nit'       => $nit ? mb_substr($nit, 0, 20) : null,
+            'activo'    => true,
+        ])->id;
+    }
 
     // Proveedores del negocio (tolera la tabla heredada del ferretero con o sin "activo")
     private function proveedores()

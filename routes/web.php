@@ -101,6 +101,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/',                 [CompraController::class, 'index'])->name('compras.index');
         Route::get('/crear',            [CompraController::class, 'crear'])->name('compras.crear');
         Route::post('/',                [CompraController::class, 'store'])->name('compras.store');
+        Route::post('/leer',            [CompraController::class, 'leer'])->name('compras.leer');
+        Route::get('/{compra}/archivo', [CompraController::class, 'archivo'])->whereNumber('compra')->name('compras.archivo');
         Route::get('/{compra}',         [CompraController::class, 'ver'])->whereNumber('compra')->name('compras.ver');
         Route::post('/{compra}/anular', [CompraController::class, 'anular'])->whereNumber('compra')->name('compras.anular');
     });
