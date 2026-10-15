@@ -2,316 +2,302 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Producto;
+use App\Models\Compra;
+use App\Models\Gasto;
+use App\Models\Insumo;
+use App\Models\MovimientoInventario;
+use App\Models\RecetaItem;
+use App\Models\Sede;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
+use App\Models\VentaPago;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
+/**
+ * Reportes de POS Topping, por sede o de todas las sedes (solo el propietario).
+ * Todo pedido se paga por adelantado: no hay créditos ni cartera.
+ */
 class ReporteController extends Controller
 {
     public function index()
     {
-        return view('reportes.index');
-    }
+        $this->soloGerente();
 
-    public function inventario()
-    {
-        $productos = Producto::where('activo', true)
-            ->orderBy('categoria')
-            ->orderBy('nombre')
-            ->get();
+        $usuario = auth()->user();
+        $sedes   = Sede::whereIn('id', $usuario->sedesPermitidasIds())->orderBy('id')->get(['id', 'nombre']);
 
-        $totalProductos    = $productos->count();
-        $totalValorCosto   = $productos->sum(fn($p) => $p->precio_compra * $p->stock);
-        $totalValorVenta   = $productos->sum(fn($p) => $p->precio_venta * $p->stock);
-        $productosAgotados = $productos->where('stock', 0)->count();
-        $productosBajos    = $productos->filter(fn($p) => $p->stock > 0 && $p->stock <= $p->stock_minimo)->count();
-
-        $pdf = Pdf::loadView('reportes.pdf.inventario', compact(
-            'productos', 'totalProductos', 'totalValorCosto',
-            'totalValorVenta', 'productosAgotados', 'productosBajos'
-        ))->setPaper('letter', 'portrait');
-
-        return $pdf->stream('inventario-' . now()->format('Y-m-d') . '.pdf');
-    }
-
-    public function stockBajo()
-    {
-        $productos = Producto::where('activo', true)
-            ->where(function ($q) {
-                $q->where('stock', 0)
-                  ->orWhereColumn('stock', '<=', 'stock_minimo');
-            })
-            ->orderBy('stock')
-            ->get();
-
-        $pdf = Pdf::loadView('reportes.pdf.stock-bajo', compact('productos'))
-            ->setPaper('letter', 'portrait');
-
-        return $pdf->stream('stock-bajo-' . now()->format('Y-m-d') . '.pdf');
-    }
-
-    public function ventasDia()
-    {
-        $hoy = Carbon::today();
-
-        $ventas = Venta::with('cliente', 'detalles')
-            ->whereDate('created_at', $hoy)
-            ->where('estado', 'completada')
-            ->orderByDesc('created_at')
-            ->get();
-
-        $totalVentas        = $ventas->count();
-        $totalIngresos      = $ventas->sum('total');
-        $totalEfectivo      = $ventas->where('metodo_pago', 'efectivo')->sum('total');
-        $totalCredito       = $ventas->where('metodo_pago', 'credito')->sum('total');
-        $totalTransferencia = $ventas->where('metodo_pago', 'transferencia')->sum('total');
-
-        $pdf = Pdf::loadView('reportes.pdf.ventas-dia', compact(
-            'ventas', 'totalVentas', 'totalIngresos',
-            'totalEfectivo', 'totalCredito', 'totalTransferencia', 'hoy'
-        ))->setPaper('letter', 'portrait');
-
-        return $pdf->stream('ventas-dia-' . $hoy->format('Y-m-d') . '.pdf');
-    }
-
-    public function ventasSemana()
-    {
-        $inicio = Carbon::now()->startOfWeek();
-        $fin    = Carbon::now()->endOfWeek();
-
-        $ventas = Venta::with('cliente', 'detalles')
-            ->whereBetween('created_at', [$inicio, $fin])
-            ->where('estado', 'completada')
-            ->orderByDesc('created_at')
-            ->get();
-
-        $totalIngresos      = $ventas->sum('total');
-        $totalEfectivo      = $ventas->where('metodo_pago', 'efectivo')->sum('total');
-        $totalTransferencia = $ventas->where('metodo_pago', 'transferencia')->sum('total');
-        $totalCredito       = $ventas->where('metodo_pago', 'credito')->sum('total');
-
-        $ventasPorDia = $ventas->groupBy(fn($v) => $v->created_at->format('Y-m-d'))
-            ->map(fn($grupo) => $grupo->sum('total'));
-
-        $pdf = Pdf::loadView('reportes.pdf.ventas-semana', compact(
-            'ventas', 'totalIngresos', 'totalEfectivo',
-            'totalTransferencia', 'totalCredito',
-            'ventasPorDia', 'inicio', 'fin'
-        ))->setPaper('letter', 'portrait');
-
-        return $pdf->stream('ventas-semana-' . now()->format('Y-m-d') . '.pdf');
-    }
-
-    public function ventasMes(Request $request)
-    {
-        $mes  = $request->mes ?? now()->month;
-        $anio = $request->anio ?? now()->year;
-
-        $inicio = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
-        $fin    = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
-
-        $ventas = Venta::with('cliente', 'detalles')
-            ->whereBetween('created_at', [$inicio, $fin])
-            ->where('estado', 'completada')
-            ->orderByDesc('created_at')
-            ->get();
-
-        $totalIngresos      = $ventas->sum('total');
-        $totalEfectivo      = $ventas->where('metodo_pago', 'efectivo')->sum('total');
-        $totalTransferencia = $ventas->where('metodo_pago', 'transferencia')->sum('total');
-        $totalCredito       = $ventas->where('metodo_pago', 'credito')->sum('total');
-
-        $productosVendidos = VentaDetalle::whereHas('venta', fn($q) =>
-            $q->whereBetween('created_at', [$inicio, $fin])
-              ->where('estado', 'completada')
-              ->where('tenant_id', session('tenant_id'))
-        )
-        ->selectRaw('nombre_producto, SUM(cantidad) as total_cantidad, SUM(subtotal) as total_ingresos')
-        ->groupBy('nombre_producto')
-        ->orderByDesc('total_cantidad')
-        ->limit(10)
-        ->get();
-
-        $ventasPorDia = $ventas->groupBy(fn($v) => $v->created_at->format('d'))
-            ->map(fn($grupo) => $grupo->sum('total'));
-
-        $pdf = Pdf::loadView('reportes.pdf.ventas-mes', compact(
-            'ventas', 'totalIngresos', 'totalEfectivo',
-            'totalTransferencia', 'totalCredito',
-            'productosVendidos', 'ventasPorDia', 'inicio', 'fin', 'mes', 'anio'
-        ))->setPaper('letter', 'portrait');
-
-        return $pdf->stream('ventas-mes-' . $inicio->format('Y-m') . '.pdf');
-    }
-
-    public function creditos()
-    {
-        $conSaldo = \App\Models\Credito::with('cliente')
-            ->where('saldo_usado', '>', 0)
-            ->orderByDesc('saldo_usado')
-            ->get();
-
-        $sinUsar = \App\Models\Credito::with('cliente')
-            ->where('saldo_usado', 0)
-            ->where('tope_credito', '>', 0)
-            ->where('estado', 'activo')
-            ->orderByDesc('tope_credito')
-            ->get();
-
-        $totalCartera       = $conSaldo->sum('saldo_usado');
-        $totalClientes      = $conSaldo->count();
-        $creditosActivos    = $conSaldo->where('estado', 'activo')->count();
-        $creditosBloqueados = $conSaldo->where('estado', 'bloqueado')->count();
-        $totalDisponible    = $sinUsar->sum('tope_credito');
-
-        $pdf = Pdf::loadView('reportes.pdf.creditos', compact(
-            'conSaldo', 'sinUsar', 'totalCartera', 'totalClientes',
-            'creditosActivos', 'creditosBloqueados', 'totalDisponible'
-        ))->setPaper('letter', 'portrait');
-
-        return $pdf->stream('cartera-creditos-' . now()->format('Y-m-d') . '.pdf');
-    }
-
-    public function kardex(Request $request)
-    {
-        $request->validate([
-            'producto_id' => 'required|exists:productos,id',
+        return view('reportes.index', [
+            'sedes'         => $sedes,
+            'sedeActiva'    => (int) session('sede_id'),
+            'puedeVerTodas' => $usuario->esPropietario() && $sedes->count() > 1,
         ]);
+    }
 
-        $producto = Producto::findOrFail($request->producto_id);
+    // ---------------------------------------------------------------
+    // Ventas en un rango de fechas
+    // ---------------------------------------------------------------
+    public function ventas(Request $request)
+    {
+        $this->soloGerente();
+        [$desde, $hasta] = $this->rango($request);
+        [$sedeIds, $titulo] = $this->sedes($request);
 
-        $salidas = VentaDetalle::with('venta')
-            ->where('producto_id', $producto->id)
-            ->whereHas('venta', fn($q) =>
-                $q->where('estado', 'completada')
-                  ->where('tenant_id', session('tenant_id'))
-            )
+        $ventas = Venta::with(['sede:id,nombre', 'pagos'])
+            ->whereIn('sede_id', $sedeIds)
+            ->whereBetween('created_at', [$desde, $hasta])
             ->orderBy('created_at')
             ->get();
 
-        $totalSalidas  = $salidas->sum('cantidad');
-        $totalIngresos = $salidas->sum('subtotal');
-        $stockInicial  = $producto->stock + $totalSalidas;
+        $completadas = $ventas->where('estado', 'completada');
+        $anuladas    = $ventas->where('estado', 'anulada');
+        $total       = (int) $completadas->sum('total');
+        $pedidos     = $completadas->count();
 
-        $movimientos = [];
-        $saldoActual = $stockInicial;
+        // Métodos de pago (los pagos mixtos se reparten en cada método)
+        $pagos     = $completadas->flatMap->pagos;
+        $porMetodo = collect(VentaPago::METODOS)->map(fn ($nombre, $clave) => [
+            'nombre' => $nombre,
+            'total'  => (int) $pagos->where('metodo', $clave)->sum('monto'),
+        ])->filter(fn ($m) => $m['total'] > 0);
 
-        $movimientos[] = [
-            'fecha'       => $producto->created_at->format('d/m/Y'),
-            'tipo'        => 'SALDO INICIAL',
-            'documento'   => '-',
-            'entrada'     => $stockInicial,
-            'salida'      => 0,
-            'saldo'       => $stockInicial,
-            'costo_unit'  => $producto->precio_compra,
-            'valor_total' => $stockInicial * $producto->precio_compra,
-        ];
+        $porSede = $completadas->groupBy('sede_id')->map(fn ($g) => [
+            'nombre'  => $g->first()->sede?->nombre ?? 'Sede',
+            'pedidos' => $g->count(),
+            'total'   => (int) $g->sum('total'),
+        ])->sortByDesc('total')->values();
 
-        foreach ($salidas as $s) {
-            $saldoActual -= $s->cantidad;
-            $movimientos[] = [
-                'fecha'       => $s->created_at->format('d/m/Y H:i'),
-                'tipo'        => 'VENTA',
-                'documento'   => str_pad($s->venta_id, 6, '0', STR_PAD_LEFT),
-                'entrada'     => 0,
-                'salida'      => $s->cantidad,
-                'saldo'       => $saldoActual,
-                'costo_unit'  => $s->precio_unitario,
-                'valor_total' => $s->subtotal,
-            ];
-        }
+        $unDia  = $desde->isSameDay($hasta);
+        $porDia = $unDia ? collect() : $completadas
+            ->groupBy(fn ($v) => $v->created_at->format('Y-m-d'))
+            ->map(fn ($g, $dia) => ['dia' => Carbon::parse($dia), 'pedidos' => $g->count(), 'total' => (int) $g->sum('total')])
+            ->values();
 
-        $nombreArchivo = preg_replace('/[^a-zA-Z0-9\-_]/', '_', $producto->nombre);
+        $porHora = $completadas
+            ->groupBy(fn ($v) => (int) $v->created_at->format('G'))
+            ->map(fn ($g, $hora) => ['hora' => $hora, 'pedidos' => $g->count(), 'total' => (int) $g->sum('total')])
+            ->sortKeys()
+            ->values();
 
-        $pdf = Pdf::loadView('reportes.pdf.kardex', compact(
-            'producto', 'movimientos', 'stockInicial',
-            'totalSalidas', 'totalIngresos'
-        ))->setPaper('letter', 'portrait');
-
-        return $pdf->stream('kardex-' . $nombreArchivo . '-' . now()->format('Y-m-d') . '.pdf');
-    }
-
-    public function estadoFinanciero(Request $request)
-    {
-        $mes  = $request->mes ?? now()->month;
-        $anio = $request->anio ?? now()->year;
-
-        $inicio = Carbon::createFromDate($anio, $mes, 1)->startOfMonth();
-        $fin    = Carbon::createFromDate($anio, $mes, 1)->endOfMonth();
-
-        // INGRESOS
-        $ventas = Venta::whereBetween('created_at', [$inicio, $fin])
-            ->where('estado', 'completada')
-            ->where('tipo_documento', '!=', 'abono_credito')
+        $topProductos = VentaDetalle::whereIn('venta_id', $completadas->pluck('id'))
+            ->selectRaw('nombre_producto, SUM(cantidad) as cantidad, SUM(subtotal) as total')
+            ->groupBy('nombre_producto')
+            ->orderByDesc('cantidad')
+            ->limit(15)
             ->get();
 
-        $ingresoEfectivo      = $ventas->where('metodo_pago', 'efectivo')->sum('total');
-        $ingresoTransferencia = $ventas->where('metodo_pago', 'transferencia')->sum('total');
-        $ingresoCredito       = $ventas->where('metodo_pago', 'credito')->sum('total');
-        $totalIngresos        = $ingresoEfectivo + $ingresoTransferencia + $ingresoCredito;
+        $datos = compact(
+            'desde', 'hasta', 'titulo', 'unDia', 'total', 'pedidos', 'anuladas',
+            'porMetodo', 'porSede', 'porDia', 'porHora', 'topProductos'
+        ) + [
+            'promedio'     => $pedidos ? (int) round($total / $pedidos) : 0,
+            'listaPedidos' => $unDia ? $ventas : collect(),
+            'variasSedes'  => count($sedeIds) > 1,
+        ];
 
-        $abonosRecibidos = Venta::whereBetween('created_at', [$inicio, $fin])
-            ->where('tipo_documento', 'abono_credito')
-            ->sum('total');
+        return $this->pdf('reportes.pdf.ventas', $datos, 'ventas-' . $desde->format('Y-m-d') . ($unDia ? '' : '-a-' . $hasta->format('Y-m-d')));
+    }
 
-        // COSTO DE VENTAS
-        $detallesVentas = VentaDetalle::whereHas('venta', fn($q) =>
-            $q->whereBetween('created_at', [$inicio, $fin])
-              ->where('estado', 'completada')
-              ->where('tenant_id', session('tenant_id'))
-        )->with('producto')->get();
+    // ---------------------------------------------------------------
+    // Estado de resultados del mes
+    // ---------------------------------------------------------------
+    public function resultados(Request $request)
+    {
+        $this->soloGerente();
+        $mes   = (int) ($request->mes ?: now()->month);
+        $anio  = (int) ($request->anio ?: now()->year);
+        $desde = Carbon::create($anio, $mes, 1)->startOfMonth();
+        $hasta = $desde->copy()->endOfMonth();
+        [$sedeIds, $titulo] = $this->sedes($request);
 
-        $costoVentas         = $detallesVentas->sum(fn($d) => ($d->producto->precio_compra ?? 0) * $d->cantidad);
-        $utilidadBruta       = $totalIngresos - $costoVentas;
+        $ventas   = Venta::whereIn('sede_id', $sedeIds)->whereBetween('created_at', [$desde, $hasta])
+            ->where('estado', 'completada')->get(['id', 'total']);
+        $ingresos = (int) $ventas->sum('total');
 
-        // GASTOS
-        $gastosMes           = \App\Models\Gasto::whereBetween('fecha', [$inicio, $fin])->get();
-        $totalGastos         = $gastosMes->sum('monto');
-        $gastosPorCategoria  = $gastosMes->groupBy('categoria')->map(fn($g) => $g->sum('monto'));
-        $utilidadOperacional = $utilidadBruta - $totalGastos;
+        // Costo de insumos: salidas por venta menos lo devuelto por anulaciones, a su costo del momento
+        $movs = MovimientoInventario::whereIn('sede_id', $sedeIds)
+            ->whereBetween('created_at', [$desde, $hasta])
+            ->get(['tipo', 'cantidad', 'costo_unitario', 'compra_id']);
 
-        // CUENTAS POR COBRAR
-        $cuentasPorCobrar      = \App\Models\Credito::with('cliente')->where('saldo_usado', '>', 0)->get();
-        $totalCuentasPorCobrar = $cuentasPorCobrar->sum('saldo_usado');
+        $valor = fn (Collection $m) => (int) round(-$m->sum(fn ($x) => (float) $x->cantidad * (float) $x->costo_unitario));
 
-        // CARTERA POR ANTIGUEDAD
-        $hoy = now();
-        $cartera030 = $cartera3160 = $cartera6190 = $carteraMas90 = 0;
+        $costoInsumos = $valor($movs->whereIn('tipo', ['venta', 'anulacion']));
+        $mermas       = $valor($movs->where('tipo', 'merma'));
+        $ajustes      = $valor($movs->where('tipo', 'ajuste')->whereNull('compra_id'));   // conteos físicos
+        $utilidadBruta = $ingresos - $costoInsumos;
 
-        foreach ($cuentasPorCobrar as $credito) {
-            $ultimaVenta = Venta::where('cliente_id', $credito->cliente_id)
-                ->where('metodo_pago', 'credito')
-                ->where('credito_pagado', false)
-                ->orderBy('created_at')
-                ->first();
+        // Gastos: se registran para todo el negocio (no por sede)
+        $todas        = $this->esTodas($request);
+        $gastosMes    = Gasto::whereBetween('fecha', [$desde->toDateString(), $hasta->toDateString()])->get();
+        $gastosPorCat = $gastosMes->groupBy(fn ($g) => $g->categoria ?: 'Otros')->map(fn ($g) => (int) $g->sum('monto'))->sortDesc();
+        $totalGastos  = (int) $gastosMes->sum('monto');
+        $incluyeGastos = $todas || Sede::where('tenant_id', (int) session('tenant_id'))->count() <= 1;
 
-            if ($ultimaVenta) {
-                $dias = $hoy->diffInDays($ultimaVenta->created_at);
-                if ($dias <= 30)     $cartera030   += $credito->saldo_usado;
-                elseif ($dias <= 60) $cartera3160  += $credito->saldo_usado;
-                elseif ($dias <= 90) $cartera6190  += $credito->saldo_usado;
-                else                 $carteraMas90 += $credito->saldo_usado;
-            }
+        $utilidad = $utilidadBruta - $mermas - $ajustes - ($incluyeGastos ? $totalGastos : 0);
+
+        $compras = (int) Compra::whereIn('sede_id', $sedeIds)->where('estado', 'registrada')
+            ->whereBetween('fecha', [$desde->toDateString(), $hasta->toDateString()])->sum('total');
+
+        // Qué tanto de lo vendido tiene receta (si no tiene, su costo no aparece arriba)
+        $detalles      = VentaDetalle::whereIn('venta_id', $ventas->pluck('id'))->get(['producto_id', 'subtotal']);
+        $conReceta     = RecetaItem::whereIn('producto_id', $detalles->pluck('producto_id')->unique())->pluck('producto_id')->unique()->flip();
+        $ventasSinReceta = (int) $detalles->filter(fn ($d) => !isset($conReceta[$d->producto_id]))->sum('subtotal');
+
+        return $this->pdf('reportes.pdf.resultados', compact(
+            'desde', 'hasta', 'titulo', 'ingresos', 'costoInsumos', 'mermas', 'ajustes', 'utilidadBruta',
+            'gastosPorCat', 'totalGastos', 'incluyeGastos', 'utilidad', 'compras', 'ventasSinReceta'
+        ) + ['pedidos' => $ventas->count()], 'resultados-' . $desde->format('Y-m'));
+    }
+
+    // ---------------------------------------------------------------
+    // Inventario de insumos
+    // ---------------------------------------------------------------
+    public function insumos(Request $request)
+    {
+        $this->soloGerente();
+        [$sedeIds, $titulo] = $this->sedes($request);
+        $soloAlertas = $request->boolean('alertas');
+
+        $sedes   = Sede::whereIn('id', $sedeIds)->orderBy('id')->get(['id', 'nombre']);
+        $insumos = Insumo::with(['stocks' => fn ($q) => $q->whereIn('sede_id', $sedeIds)])
+            ->where('activo', true)->orderBy('categoria')->orderBy('nombre')->get()
+            ->map(function ($i) use ($sedes) {
+                $porSede = $sedes->mapWithKeys(fn ($s) => [$s->id => $i->stocks->firstWhere('sede_id', $s->id)]);
+                $cantidad = (float) $porSede->filter()->sum('cantidad');
+                $alerta = $porSede->filter()->contains(fn ($st) => in_array($st->estado(), ['agotado', 'bajo'], true));
+                return (object) [
+                    'nombre'    => $i->nombre,
+                    'categoria' => $i->categoria ?: 'Sin categoría',
+                    'unidad'    => $i->unidad,
+                    'costo'     => (float) $i->costo_unitario,
+                    'porSede'   => $porSede,
+                    'cantidad'  => $cantidad,
+                    'valor'     => max(0, $cantidad) * (float) $i->costo_unitario,
+                    'alerta'    => $alerta,
+                    'contado'   => $porSede->filter()->isNotEmpty(),
+                ];
+            })
+            ->when($soloAlertas, fn ($c) => $c->where('alerta', true))
+            ->values();
+
+        return $this->pdf('reportes.pdf.insumos', [
+            'titulo'      => $titulo,
+            'sedes'       => $sedes,
+            'insumos'     => $insumos,
+            'soloAlertas' => $soloAlertas,
+            'valorTotal'  => (int) round($insumos->sum('valor')),
+            'alertas'     => $insumos->where('alerta', true)->count(),
+        ], ($soloAlertas ? 'insumos-alertas-' : 'insumos-') . now()->format('Y-m-d'));
+    }
+
+    // ---------------------------------------------------------------
+    // Compras a proveedores
+    // ---------------------------------------------------------------
+    public function compras(Request $request)
+    {
+        $this->soloGerente();
+        [$desde, $hasta] = $this->rango($request);
+        [$sedeIds, $titulo] = $this->sedes($request);
+
+        $compras = Compra::with(['proveedor:id,nombre', 'sede:id,nombre'])->withCount('items')
+            ->whereIn('sede_id', $sedeIds)->where('estado', 'registrada')
+            ->whereBetween('fecha', [$desde->toDateString(), $hasta->toDateString()])
+            ->orderBy('fecha')->get();
+
+        $porProveedor = $compras->groupBy(fn ($c) => $c->proveedor?->nombre ?? 'Sin proveedor')
+            ->map(fn ($g) => ['facturas' => $g->count(), 'total' => (int) $g->sum('total')])
+            ->sortByDesc('total');
+
+        return $this->pdf('reportes.pdf.compras', [
+            'desde'        => $desde,
+            'hasta'        => $hasta,
+            'titulo'       => $titulo,
+            'compras'      => $compras,
+            'porProveedor' => $porProveedor,
+            'total'        => (int) $compras->sum('total'),
+            'impuestos'    => (int) $compras->sum('impuestos'),
+            'variasSedes'  => count($sedeIds) > 1,
+        ], 'compras-' . $desde->format('Y-m-d') . '-a-' . $hasta->format('Y-m-d'));
+    }
+
+    // ---------------------------------------------------------------
+
+    /** [ids de sedes, texto para el encabezado] según ?sede=ID|todas */
+    private function sedes(Request $request): array
+    {
+        $usuario    = auth()->user();
+        $permitidas = array_map('intval', $usuario->sedesPermitidasIds());
+
+        if ($this->esTodas($request)) {
+            return [$permitidas, 'Todas las sedes'];
         }
 
-        // VALOR INVENTARIO
-        $valorInventario = Producto::where('activo', true)
-            ->get()
-            ->sum(fn($p) => $p->precio_compra * $p->stock);
+        $id = (int) ($request->sede ?: session('sede_id'));
+        if (!in_array($id, $permitidas, true)) {
+            $id = (int) session('sede_id');
+        }
+        if (!in_array($id, $permitidas, true)) {
+            abort(403, 'No autorizado');
+        }
 
-        $pdf = Pdf::loadView('reportes.pdf.estado-financiero', compact(
-            'inicio', 'fin', 'mes', 'anio',
-            'totalIngresos', 'ingresoEfectivo', 'ingresoTransferencia', 'ingresoCredito',
-            'abonosRecibidos', 'costoVentas', 'utilidadBruta',
-            'totalGastos', 'gastosPorCategoria', 'utilidadOperacional',
-            'totalCuentasPorCobrar', 'cuentasPorCobrar',
-            'cartera030', 'cartera3160', 'cartera6190', 'carteraMas90',
-            'valorInventario'
-        ))->setPaper('letter', 'portrait');
+        return [[$id], 'Sede ' . (Sede::find($id)?->nombre ?? '')];
+    }
 
-        return $pdf->stream('estado-financiero-' . $inicio->format('Y-m') . '.pdf');
+    private function esTodas(Request $request): bool
+    {
+        return $request->sede === 'todas' && auth()->user()->esPropietario();
+    }
+
+    /** ?periodo=hoy|ayer|semana|mes|mes_anterior o ?desde=&hasta= (máximo 1 año) */
+    private function rango(Request $request): array
+    {
+        $hoy = now();
+
+        [$desde, $hasta] = match ($request->periodo) {
+            'ayer'         => [$hoy->copy()->subDay()->startOfDay(), $hoy->copy()->subDay()->endOfDay()],
+            'semana'       => [$hoy->copy()->startOfWeek(), $hoy->copy()->endOfDay()],
+            'mes'          => [$hoy->copy()->startOfMonth(), $hoy->copy()->endOfDay()],
+            'mes_anterior' => [$hoy->copy()->subMonthNoOverflow()->startOfMonth(), $hoy->copy()->subMonthNoOverflow()->endOfMonth()],
+            'rango'        => [
+                $this->fecha($request->desde, $hoy)->startOfDay(),
+                $this->fecha($request->hasta, $hoy)->endOfDay(),
+            ],
+            default        => [$hoy->copy()->startOfDay(), $hoy->copy()->endOfDay()],
+        };
+
+        if ($desde->gt($hasta)) {
+            [$desde, $hasta] = [$hasta->copy()->startOfDay(), $desde->copy()->endOfDay()];
+        }
+        if ($desde->diffInDays($hasta) > 366) {
+            $desde = $hasta->copy()->subYear()->startOfDay();
+        }
+
+        return [$desde, $hasta];
+    }
+
+    private function fecha(?string $valor, Carbon $defecto): Carbon
+    {
+        try {
+            return $valor ? Carbon::parse($valor) : $defecto->copy();
+        } catch (\Throwable) {
+            return $defecto->copy();
+        }
+    }
+
+    private function pdf(string $vista, array $datos, string $archivo)
+    {
+        $datos['tenant']   = auth()->user()->tenant;
+        $datos['generado'] = now();
+
+        return Pdf::loadView($vista, $datos)->setPaper('letter', 'portrait')->stream($archivo . '.pdf');
+    }
+
+    private function soloGerente(): void
+    {
+        if (auth()->user()->rol !== 'dueno') {
+            abort(403, 'Solo un gerente o el propietario puede ver los reportes.');
+        }
     }
 }

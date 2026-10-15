@@ -42,10 +42,6 @@
                                style="padding:6px 12px;background:#000;color:#fff;border-radius:6px;font-size:12px;text-decoration:none;">
                                 ✏️ Editar
                             </a>
-                            <a href="/clientes/{{ $cliente->id }}/creditos"
-                               style="padding:6px 12px;background:#f0f0f0;border-radius:6px;font-size:12px;text-decoration:none;color:#000;">
-                                💳 Crédito
-                            </a>
                         </div>
                     </td>
                 </tr>

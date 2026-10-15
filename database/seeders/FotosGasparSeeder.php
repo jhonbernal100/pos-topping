@@ -11,7 +11,7 @@ class FotosGasparSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenant = Tenant::where('nit', '529934889-8')->firstOrFail();
+        $tenant = Tenant::where('nit', '52934889-8')->firstOrFail();
         $dir    = database_path('seeders/fotos/gaspar');
 
         $mapa = [

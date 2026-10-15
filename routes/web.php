@@ -64,7 +64,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/',                    [VentaController::class, 'store'])->name('ventas.store');
         Route::get('/{venta}/ticket',       [VentaController::class, 'ticket'])->name('ventas.ticket');
         Route::post('/{venta}/anular',      [VentaController::class, 'anular'])->name('ventas.anular');
-        Route::get('/{venta}/ticket-abono', [VentaController::class, 'ticketAbono'])->name('ventas.ticketAbono');
         Route::get('/{venta}/devolucion',   [DevolucionController::class, 'index'])->name('ventas.devolucion');
         Route::post('/{venta}/devolucion',  [DevolucionController::class, 'procesar'])->name('ventas.procesarDevolucion');
     });
@@ -137,10 +136,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/',                         [ClienteController::class, 'index'])->name('clientes.index');
         Route::get('/crear',                    [ClienteController::class, 'crear'])->name('clientes.crear');
         Route::post('/',                        [ClienteController::class, 'store'])->name('clientes.store');
-        Route::get('/{cliente}/creditos',       [ClienteController::class, 'creditos'])->name('clientes.creditos');
-        Route::post('/{cliente}/creditos',      [ClienteController::class, 'guardarCredito'])->name('clientes.guardarCredito');
-        Route::get('/{cliente}/historial',      [ClienteController::class, 'historialCredito'])->name('clientes.historial');
-        Route::post('/{cliente}/pagar-credito', [ClienteController::class, 'pagarCredito'])->name('clientes.pagarCredito');
         Route::get('/{cliente}/editar',         [ClienteController::class, 'editar'])->name('clientes.editar');
         Route::post('/{cliente}/actualizar',    [ClienteController::class, 'actualizar'])->name('clientes.actualizar');
     });
@@ -152,16 +147,13 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{gasto}/eliminar', [GastoController::class, 'eliminar'])->name('gastos.eliminar');
     });
 
+    // Reportes por sede (solo gerentes y propietario — validado en ReporteController)
     Route::prefix('reportes')->group(function () {
-        Route::get('/',                  [ReporteController::class, 'index'])->name('reportes.index');
-        Route::get('/inventario',        [ReporteController::class, 'inventario'])->name('reportes.inventario');
-        Route::get('/stock-bajo',        [ReporteController::class, 'stockBajo'])->name('reportes.stockBajo');
-        Route::get('/ventas-dia',        [ReporteController::class, 'ventasDia'])->name('reportes.ventasDia');
-        Route::get('/ventas-semana',     [ReporteController::class, 'ventasSemana'])->name('reportes.ventasSemana');
-        Route::get('/ventas-mes',        [ReporteController::class, 'ventasMes'])->name('reportes.ventasMes');
-        Route::get('/kardex',            [ReporteController::class, 'kardex'])->name('reportes.kardex');
-        Route::get('/creditos',          [ReporteController::class, 'creditos'])->name('reportes.creditos');
-        Route::get('/estado-financiero', [ReporteController::class, 'estadoFinanciero'])->name('reportes.estadoFinanciero');
+        Route::get('/',           [ReporteController::class, 'index'])->name('reportes.index');
+        Route::get('/ventas',     [ReporteController::class, 'ventas'])->name('reportes.ventas');
+        Route::get('/resultados', [ReporteController::class, 'resultados'])->name('reportes.resultados');
+        Route::get('/insumos',    [ReporteController::class, 'insumos'])->name('reportes.insumos');
+        Route::get('/compras',    [ReporteController::class, 'compras'])->name('reportes.compras');
     });
 
     Route::prefix('usuarios')->group(function () {

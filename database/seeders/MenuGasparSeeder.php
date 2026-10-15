@@ -19,7 +19,7 @@ class MenuGasparSeeder extends Seeder
 
     public function run(): void
     {
-        $tenant = Tenant::where('nit', '529934889-8')->firstOrFail();
+        $tenant = Tenant::where('nit', '52934889-8')->firstOrFail();
         $this->tenantId = $tenant->id;
 
         // ---------------------------------------------------------------
@@ -42,7 +42,7 @@ class MenuGasparSeeder extends Seeder
 
         $this->g['frutas'] = $this->grupo('Frutas', 2500, 2, [
             'Fresa', 'Mango', 'Banano en salsa de la casa', 'Papayuela', 'Maracuyá',
-            'Guanábana', 'Durazno en almíbar', 'Coco rayado',
+            'Guanábana', 'Durazno en almíbar', 'Coco rayado', 'Arándanos',
             ['Sandía', self::FIN_DE_SEMANA],
         ]);
 

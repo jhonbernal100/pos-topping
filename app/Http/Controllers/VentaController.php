@@ -253,12 +253,6 @@ class VentaController extends Controller
         return view('ventas.ticket', compact('venta'));
     }
 
-    // Heredado del ferretero: en POS Topping no hay créditos
-    public function ticketAbono(Venta $venta)
-    {
-        abort(404);
-    }
-
     public function anular(Venta $venta, InventarioService $inventario)
     {
         if (auth()->user()->rol !== 'dueno') {

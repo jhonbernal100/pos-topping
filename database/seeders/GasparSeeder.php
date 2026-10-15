@@ -15,7 +15,7 @@ class GasparSeeder extends Seeder
     {
         // Negocio (se crea una sola vez; si ya existe no se modifica)
         $tenant = Tenant::firstOrCreate(
-            ['nit' => '529934889-8'],
+            ['nit' => '52934889-8'],
             [
                 'nombre'                  => 'Gaspar Merengonería y Heladería',
                 'telefono'                => '3106631824',
