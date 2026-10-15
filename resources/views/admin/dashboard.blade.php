@@ -435,8 +435,8 @@
         <div class="modal-campo">
             <label>Meses de suscripcion (si es activa)</label>
             <select id="input-meses">
-                <option value="3">3 meses — Trimestral $45,000/mes</option>
-                <option value="12">12 meses — Anual $35,000/mes</option>
+                <option value="3">3 meses — Trimestral $45,000/mes por sede</option>
+                <option value="12">12 meses — Anual $35,000/mes por sede</option>
             </select>
         </div>
         <div class="modal-btns">

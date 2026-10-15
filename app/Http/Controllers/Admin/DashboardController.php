@@ -24,13 +24,8 @@ class DashboardController extends Controller
     $ingresosSuscripciones = Tenant::where('subscription_status', 'activa')
     ->whereYear('updated_at', now()->year)
     ->get()
-    ->sum(function ($tenant) {
-    return match($tenant->subscription_plan) {
-        'anual'      => 420000,  // $35,000 x 12 meses
-        'trimestral' => 135000,  // $45,000 x 3 meses
-        default      => 0,
-    };
-    });
+    // Valor de cada pago: precio mensual por sede × meses del plan × sedes del negocio
+    ->sum(fn ($tenant) => $tenant->subscription_price ?: $tenant->precioPlan());
 
     $trialsProximosVencer = Tenant::where('subscription_status', 'trial')
         ->whereNotNull('trial_ends_at')
@@ -127,6 +122,7 @@ class DashboardController extends Controller
 
         if ($request->plan === 'activa' && $request->meses) {
             $data['subscription_ends_at'] = now()->addMonths((int)$request->meses);
+            $data['subscription_price']   = $tenant->precioPlan($data['subscription_plan']);
         }
 
         if ($request->plan === 'trial') {
@@ -143,7 +139,10 @@ class DashboardController extends Controller
         return response()->json([
             'success' => true,
             'mensaje' => 'Plan actualizado: ' . strtoupper($request->plan) .
-                         ($request->meses ? " por {$request->meses} meses" : ''),
+                         ($request->plan === 'activa' && $request->meses
+                             ? " por {$request->meses} meses · " . $tenant->sedesCobradas() . ' sede(s) · $'
+                               . number_format($tenant->precioPlan($data['subscription_plan']), 0, ',', '.')
+                             : ''),
         ]);
     }
 

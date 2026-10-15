@@ -32,6 +32,28 @@ class Tenant extends Model
     public const TRIAL_MAX_USUARIOS_POR_SEDE = 2;
     public const TRIAL_MAX_PRODUCTOS         = 20;
 
+    // Precio mensual por sede y meses que se cobran en cada pago
+    public const PLANES = [
+        'trimestral' => ['nombre' => 'Trimestral', 'mensual_por_sede' => 45000, 'meses' => 3],
+        'anual'      => ['nombre' => 'Anual',      'mensual_por_sede' => 35000, 'meses' => 12],
+    ];
+
+    /** Sedes que se cobran (las activas; mínimo 1). */
+    public function sedesCobradas(): int
+    {
+        return max(1, $this->sedes()->where('activo', true)->count());
+    }
+
+    /** Valor de cada pago del plan: mensual por sede × meses × sedes. */
+    public function precioPlan(?string $plan = null, ?int $sedes = null): int
+    {
+        $p = self::PLANES[$plan ?? $this->subscription_plan] ?? null;
+        if (!$p) {
+            return 0;
+        }
+        return $p['mensual_por_sede'] * $p['meses'] * ($sedes ?? $this->sedesCobradas());
+    }
+
     public function tieneAcceso(): bool
     {
         return match($this->subscription_status) {

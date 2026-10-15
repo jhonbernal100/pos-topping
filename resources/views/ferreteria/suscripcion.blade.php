@@ -37,7 +37,21 @@
 
         <div style="background:#f5f5f5;border-radius:10px;padding:20px;margin-bottom:20px;text-align:left;">
             <div style="font-size:14px;color:#555;margin-bottom:8px;">Negocio: <strong>{{ $tenant->nombre }}</strong></div>
-            <div style="font-size:14px;color:#555;margin-bottom:8px;">Plan: <strong>{{ ucfirst($tenant->plan) }}</strong></div>
+            @php
+                $planInfo = \App\Models\Tenant::PLANES[$tenant->subscription_plan] ?? null;
+                $sedesCobro = $tenant->sedesCobradas();
+            @endphp
+            <div style="font-size:14px;color:#555;margin-bottom:8px;">
+                Plan: <strong>{{ $planInfo['nombre'] ?? ($tenant->subscription_status === 'trial' ? 'Prueba gratis' : '—') }}</strong>
+            </div>
+            <div style="font-size:14px;color:#555;margin-bottom:8px;">Sedes: <strong>{{ $sedesCobro }}</strong></div>
+            @if($planInfo)
+                <div style="font-size:14px;color:#555;margin-bottom:8px;">
+                    Valor: <strong>${{ number_format($planInfo['mensual_por_sede'] * $sedesCobro, 0, ',', '.') }}/mes</strong>
+                    <span style="color:#888;">(${{ number_format($planInfo['mensual_por_sede'], 0, ',', '.') }} por sede)</span>
+                    · ${{ number_format($tenant->precioPlan(), 0, ',', '.') }} {{ $planInfo['meses'] === 12 ? 'al año' : 'cada trimestre' }}
+                </div>
+            @endif
             <div style="font-size:14px;color:#555;">NIT: <strong>{{ $tenant->nit }}</strong></div>
         </div>
 

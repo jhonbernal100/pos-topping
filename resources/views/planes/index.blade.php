@@ -329,7 +329,7 @@
         El POS para heladerias, merengonerias y negocios de postres.
         Empieza gratis 30 dias y escala cuando lo necesites.
     </p>
-    <span class="badge-ahorro">Plan anual — ahorra $120,000 COP vs trimestral</span>
+    <span class="badge-ahorro">Precios por sede · Plan anual: ahorra $120,000 COP por sede vs trimestral</span>
 </div>
 
 <!-- PLANES -->
@@ -370,9 +370,9 @@
     <div class="plan-card popular">
         <div class="badge-popular">MAS POPULAR</div>
         <div class="plan-nombre">Trimestral</div>
-        <div class="plan-precio">$45,000 <span>/ mes</span></div>
+        <div class="plan-precio">$45,000 <span>/ mes por sede</span></div>
         <div class="plan-periodo">Facturado cada 3 meses</div>
-        <div class="plan-cobro">$135,000 COP cada trimestre</div>
+        <div class="plan-cobro">$135,000 COP por sede cada trimestre</div>
         <hr class="plan-divider">
         <ul class="plan-features">
             <li class="seccion-titulo">Limites</li>
@@ -404,11 +404,11 @@
 
     <!-- ANUAL -->
     <div class="plan-card anual">
-        <div class="badge-ahorro-card">AHORRA $120,000/ANO</div>
+        <div class="badge-ahorro-card">AHORRA $120,000/ANO POR SEDE</div>
         <div class="plan-nombre">Anual</div>
-        <div class="plan-precio">$35,000 <span>/ mes</span></div>
+        <div class="plan-precio">$35,000 <span>/ mes por sede</span></div>
         <div class="plan-periodo">Facturado anualmente</div>
-        <div class="plan-cobro">$420,000 COP al ano</div>
+        <div class="plan-cobro">$420,000 COP por sede al ano</div>
         <hr class="plan-divider">
         <ul class="plan-features">
             <li class="seccion-titulo">Todo lo del plan trimestral:</li>
@@ -424,7 +424,7 @@
             <li><span class="check">+</span> Soporte prioritario 24/7</li>
             <li><span class="check">+</span> Renovacion automatica</li>
             <li><span class="check">+</span> Actualizaciones sin costo</li>
-            <li><span class="check">+</span> Ahorro de $120,000 vs trimestral</li>
+            <li><span class="check">+</span> Ahorro de $120,000 por sede vs trimestral</li>
         </ul>
         <a href="https://wa.me/573125625170?text=Hola,%20quiero%20activar%20el%20plan%20Anual%20de%20POS%20Topping"
            target="_blank" class="btn-plan btn-anual">
@@ -448,7 +448,7 @@
         </thead>
         <tbody>
             <tr>
-                <td>Precio mensual</td>
+                <td>Precio mensual por sede</td>
                 <td>Gratis</td>
                 <td>$45,000</td>
                 <td>$35,000</td>
@@ -559,6 +559,11 @@
     <div class="faq-item">
         <h4>Que pasa cuando vence el trial?</h4>
         <p>Tu cuenta queda en modo lectura — puedes ver tus datos pero no realizar nuevas ventas. Puedes activar cualquier plan en cualquier momento para continuar.</p>
+    </div>
+
+    <div class="faq-item">
+        <h4>Como se cobra si tengo varias sedes?</h4>
+        <p>El precio es por sede. Por ejemplo, con 2 sedes en el plan anual pagas $70,000 al mes ($840,000 al ano), y en el plan trimestral $90,000 al mes ($270,000 cada trimestre). Todas las sedes comparten el mismo menu, inventario por sede y reportes consolidados.</p>
     </div>
 
     <div class="faq-item">
