@@ -90,3 +90,91 @@
                 Deja en blanco para mantener la contrasena actual
             </div>
         </div>
+        <div style="display:flex;gap:8px;">
+            <a href="/usuarios"
+               style="flex:1;padding:14px;background:#f0f0f0;color:#000;border-radius:10px;text-align:center;text-decoration:none;font-size:15px;">
+                Cancelar
+            </a>
+            <button id="btn-guardar" onclick="guardar()"
+                style="flex:2;padding:14px;background:#000;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;">
+                Guardar cambios
+            </button>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section('scripts')
+<script>
+function mensaje(texto, ok) {
+    const box = document.getElementById('mensaje');
+    box.textContent = texto;
+    box.style.display = 'block';
+    box.style.background = ok ? '#d4edda' : '#f8d7da';
+    box.style.color = ok ? '#155724' : '#721c24';
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function actualizarSedes() {
+    const rol = document.getElementById('f-rol');
+    if (!rol || rol.type === 'hidden') return;
+    const sede = document.getElementById('f-sede');
+    const todas = document.getElementById('opt-todas');
+    const ayuda = document.getElementById('ayuda-rol');
+
+    if (rol.value === 'auxiliar') {
+        todas.hidden = true;
+        if (!sede.value) sede.selectedIndex = 1;
+        ayuda.textContent = 'El auxiliar solo trabaja en la sede elegida.';
+    } else {
+        todas.hidden = false;
+        ayuda.textContent = sede.value
+            ? 'Gerente de la sede elegida: maneja compras, reportes y usuarios de esa sede.'
+            : 'Propietario: ve y administra todas las sedes.';
+    }
+}
+document.getElementById('f-sede')?.addEventListener('change', actualizarSedes);
+actualizarSedes();
+
+async function guardar() {
+    const name     = document.getElementById('f-name').value.trim();
+    const email    = document.getElementById('f-email').value.trim();
+    const password = document.getElementById('f-password').value;
+    if (!name || !email) return mensaje('Escribe el nombre y el correo.', false);
+    if (password && password.length < 8) return mensaje('La nueva contraseña debe tener al menos 8 caracteres.', false);
+
+    const btn = document.getElementById('btn-guardar');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+
+    try {
+        const res = await fetch('/usuarios/{{ $usuario->id }}/actualizar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                rol: document.getElementById('f-rol').value,
+                sede_id: document.getElementById('f-sede').value || null,
+                password: password || null,
+            }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+            const primero = data.errors ? Object.values(data.errors)[0][0] : null;
+            throw new Error(primero ?? data.mensaje ?? data.message ?? 'No se pudo guardar.');
+        }
+        mensaje(data.mensaje, true);
+        setTimeout(() => window.location = '/usuarios', 1200);
+    } catch (e) {
+        mensaje(e.message, false);
+        btn.disabled = false;
+        btn.textContent = 'Guardar cambios';
+    }
+}
+</script>
+@endsection

@@ -6,6 +6,7 @@ use App\Models\Sede;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class UsuarioController extends Controller
@@ -64,19 +65,30 @@ class UsuarioController extends Controller
             ? $tenant->nombre . ' - Sede ' . $usuario->sede->nombre
             : $tenant->nombre;
 
-        Mail::raw(
-            "Hola {$request->name},\n\n" .
-            "El administrador de {$lugar} te ha creado una cuenta en POS Topping.\n\n" .
-            "Accede en: https://pos-topping.avanzas.digital/login\n" .
-            "Usuario: {$request->email}\n" .
-            "Contrasena temporal: {$password}\n\n" .
-            "Te recomendamos cambiar tu contrasena al ingresar.\n\n" .
-            "Avanzas Digital - Tu exito es nuestro objetivo",
-            function ($message) use ($request, $lugar) {
-                $message->to($request->email)
-                        ->subject('Acceso a POS Topping - ' . $lugar);
-            }
-        );
+        try {
+            Mail::raw(
+                "Hola {$request->name},\n\n" .
+                "El administrador de {$lugar} te ha creado una cuenta en POS Topping.\n\n" .
+                "Accede en: https://pos-topping.avanzas.digital/login\n" .
+                "Usuario: {$request->email}\n" .
+                "Contrasena temporal: {$password}\n\n" .
+                "Te recomendamos cambiar tu contrasena al ingresar.\n\n" .
+                "Avanzas Digital - Tu exito es nuestro objetivo",
+                function ($message) use ($request, $lugar) {
+                    $message->to($request->email)
+                            ->subject('Acceso a POS Topping - ' . $lugar);
+                }
+            );
+        } catch (\Throwable $e) {
+            // El usuario ya quedó creado: se muestra la contraseña para entregarla en persona
+            Log::warning('Correo de nuevo usuario no enviado: ' . $e->getMessage());
+
+            return response()->json([
+                'success'           => true,
+                'mensaje'           => "Usuario creado, pero no se pudo enviar el correo a {$request->email}. Entrégale esta contraseña temporal:",
+                'password_temporal' => $password,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
