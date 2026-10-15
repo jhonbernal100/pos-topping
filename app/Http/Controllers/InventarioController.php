@@ -6,7 +6,6 @@ use App\Models\Producto;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Gemini\Laravel\Facades\Gemini;
 use Google\Auth\Credentials\ServiceAccountCredentials;
 use Google\Auth\HttpHandler\HttpHandlerFactory;
 
@@ -86,11 +85,11 @@ Devuélveme ÚNICAMENTE un JSON válido con esta estructura, sin texto adicional
   \"referencia\": \"referencia o código si se identifica o null\"
 }";
 
-            $geminiResponse = Gemini::generativeModel(
-                model: 'models/gemini-2.5-flash'
-            )->generateContent($prompt);
-
-            $jsonTexto = preg_replace('/```json|```/', '', $geminiResponse->text());
+            $jsonTexto = app(\App\Services\GeminiService::class)->generar([
+                'contents'         => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['temperature' => 0, 'responseMimeType' => 'application/json'],
+            ], 'Gemini');
+            $jsonTexto = preg_replace('/```json|```/', '', $jsonTexto);
             $jsonTexto = trim($jsonTexto);
             $producto  = json_decode($jsonTexto, true);
 

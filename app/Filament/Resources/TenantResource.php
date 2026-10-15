@@ -42,16 +42,6 @@ class TenantResource extends Resource
                     ->default(true),
             ])->columns(2),
 
-            Forms\Components\Section::make('Facturación electrónica (Alegra)')->schema([
-                Forms\Components\TextInput::make('alegra_user')
-                    ->label('Usuario Alegra')->maxLength(191),
-                Forms\Components\TextInput::make('alegra_token')
-                    ->label('Token Alegra')->maxLength(191)->password(),
-                Forms\Components\TextInput::make('alegra_resolucion_id')
-                    ->label('ID Resolución DIAN')->maxLength(50),
-                Forms\Components\Toggle::make('facturacion_electronica')
-                    ->label('Facturación electrónica activa'),
-            ])->columns(2)->collapsed(),
         ]);
     }
 
@@ -70,8 +60,6 @@ class TenantResource extends Resource
                         'premium'     => 'success',
                     }),
                 Tables\Columns\IconColumn::make('activo')->boolean(),
-                Tables\Columns\IconColumn::make('facturacion_electronica')
-                    ->label('DIAN')->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')->dateTime('d/m/Y')->sortable(),
             ])

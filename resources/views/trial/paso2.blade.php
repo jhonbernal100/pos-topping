@@ -145,7 +145,7 @@
 
     <div class="campo">
         <label>Nombre del negocio *</label>
-        <input type="text" id="f-nombre-negocio" placeholder="Ej: Ferrelectricos Heidy">
+        <input type="text" id="f-nombre-negocio" placeholder="Ej: Heladería La Esquina">
     </div>
 
     <div class="campo">

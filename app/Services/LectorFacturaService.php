@@ -7,9 +7,6 @@ use App\Models\InsumoAlias;
 use App\Models\Proveedor;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -18,8 +15,6 @@ use RuntimeException;
  */
 class LectorFacturaService
 {
-    private const API = 'https://generativelanguage.googleapis.com/v1beta/';
-
     public const MIMES = [
         'pdf'  => 'application/pdf',
         'jpg'  => 'image/jpeg',
@@ -28,82 +23,25 @@ class LectorFacturaService
         'webp' => 'image/webp',
     ];
 
+    public function __construct(private GeminiService $gemini)
+    {
+    }
+
     /** Lectura cruda de Gemini (estructura del esquema). */
     public function leer(UploadedFile $archivo): array
     {
-        $clave = config('gemini.api_key') ?: env('GEMINI_API_KEY');
-        if (!$clave) {
-            throw new RuntimeException('Falta configurar la llave de Gemini (GEMINI_API_KEY).');
-        }
-
-        @set_time_limit(240);   // la lectura puede tardar más que el límite normal de PHP
-
         $ext  = strtolower($archivo->getClientOriginalExtension() ?: $archivo->extension());
         $mime = self::MIMES[$ext] ?? $archivo->getMimeType();
 
-        $cuerpo = [
-            'contents' => [[
-                'role'  => 'user',
-                'parts' => [
-                    ['inline_data' => ['mime_type' => $mime, 'data' => base64_encode(file_get_contents($archivo->getRealPath()))]],
-                    ['text' => $this->prompt()],
-                ],
-            ]],
-            'generationConfig' => [
-                'temperature'      => 0,
-                'responseMimeType' => 'application/json',
-                'responseSchema'   => $this->esquema(),
-            ],
-        ];
-
-        // Se prueban los modelos en orden: si uno está saturado (503/429) se reintenta una vez
-        // y luego se pasa al siguiente; si fue retirado (404) se pasa al siguiente de inmediato.
-        $transitorio = [429, 500, 503, 504];
-        $respuesta   = null;
-        $llamadas    = 0;
-
-        foreach ($this->candidatos($clave) as $modelo) {
-            for ($intento = 0; $intento < 2 && $llamadas < 4; $intento++) {
-                $llamadas++;
-                $respuesta = $this->generar($clave, $modelo, $cuerpo);
-                if (!in_array($respuesta->status(), $transitorio, true)) {
-                    break;
-                }
-                Log::info("Gemini factura: {$modelo} respondió {$respuesta->status()}, reintentando");
-                if ($intento === 0) {
-                    sleep(2);
-                }
-            }
-
-            if ($respuesta->successful()) {
-                Cache::put('gemini_modelo_ok', $modelo, now()->addDay());
-                break;
-            }
-
-            // 400 / 403: el problema no es el modelo, no tiene sentido probar otro
-            if (!in_array($respuesta->status(), array_merge([404], $transitorio), true) || $llamadas >= 4) {
-                break;
-            }
-            if ($respuesta->status() === 404) {
-                Cache::forget('gemini_modelo_ok');
-            }
-        }
-
-        if (!$respuesta || $respuesta->failed()) {
-            $estado = $respuesta?->status();
-            Log::warning('Gemini factura: HTTP ' . $estado . ' ' . mb_substr((string) $respuesta?->body(), 0, 500));
-            throw new RuntimeException(in_array($estado, $transitorio, true)
-                ? 'El servicio de IA de Google está saturado en este momento. Intenta de nuevo en un minuto.'
-                : 'El servicio de lectura no respondió. Intenta de nuevo en un momento.');
-        }
-
-        $texto = collect($respuesta->json('candidates.0.content.parts', []))->pluck('text')->filter()->implode('');
-        $texto = trim(preg_replace('/^```(json)?|```$/m', '', $texto));
-        $datos = json_decode($texto, true);
-
-        if (!is_array($datos)) {
-            Log::warning('Gemini factura: respuesta no es JSON: ' . mb_substr($texto, 0, 500));
-            throw new RuntimeException('No se pudo interpretar la factura. Prueba con una foto más nítida o el PDF original.');
+        try {
+            $datos = $this->gemini->json([
+                ['inline_data' => ['mime_type' => $mime, 'data' => base64_encode(file_get_contents($archivo->getRealPath()))]],
+                ['text' => $this->prompt()],
+            ], $this->esquema(), 'Gemini factura');
+        } catch (RuntimeException $e) {
+            throw new RuntimeException(str_contains($e->getMessage(), 'interpretar')
+                ? 'No se pudo interpretar la factura. Prueba con una foto más nítida o el PDF original.'
+                : $e->getMessage());
         }
 
         if (isset($datos['es_factura']) && $datos['es_factura'] === false) {
@@ -111,85 +49,6 @@ class LectorFacturaService
         }
 
         return $datos;
-    }
-
-    private function generar(string $clave, string $modelo, array $cuerpo)
-    {
-        return Http::timeout(60)
-            ->withHeaders(['x-goog-api-key' => $clave])
-            ->post(self::API . 'models/' . $modelo . ':generateContent', $cuerpo);
-    }
-
-    /**
-     * Modelos a probar, en orden: el de GEMINI_MODELO_FACTURAS en .env (si existe), el último
-     * que funcionó y luego los Flash disponibles para esta llave (la lista se consulta una vez al día).
-     */
-    private function candidatos(string $clave): array
-    {
-        $disponibles = Cache::get('gemini_modelos_disponibles') ?: (function () use ($clave) {
-            $nombres = [];
-            $pagina  = null;
-            do {
-                $r = Http::timeout(20)->withHeaders(['x-goog-api-key' => $clave])
-                    ->get(self::API . 'models', array_filter(['pageSize' => 200, 'pageToken' => $pagina]));
-                if ($r->failed()) {
-                    Log::warning('Gemini factura: no se pudo listar modelos, HTTP ' . $r->status() . ' ' . mb_substr($r->body(), 0, 300));
-                    return [];   // no se guarda en caché: se vuelve a consultar en la próxima lectura
-                }
-                foreach ($r->json('models', []) as $m) {
-                    if (in_array('generateContent', $m['supportedGenerationMethods'] ?? [], true)) {
-                        $nombres[] = str_replace('models/', '', $m['name']);
-                    }
-                }
-                $pagina = $r->json('nextPageToken');
-            } while ($pagina);
-
-            $ordenados = self::ordenarModelos($nombres);
-            if ($ordenados) {
-                Cache::put('gemini_modelos_disponibles', $ordenados, now()->addDay());
-            }
-            return $ordenados;
-        })();
-
-        $lista = array_merge(
-            array_filter([env('GEMINI_MODELO_FACTURAS'), Cache::get('gemini_modelo_ok')]),
-            $disponibles ?: ['gemini-flash-latest', 'gemini-flash-lite-latest']
-        );
-
-        return array_values(array_unique($lista));
-    }
-
-    /**
-     * Orden de preferencia: gemini-X-flash estable (versión más alta primero), luego Flash en preview,
-     * luego Flash-Lite y al final los alias "latest". Se descartan image, tts, live, audio y embedding.
-     */
-    public static function ordenarModelos(array $nombres): array
-    {
-        $version = fn ($n) => preg_match('/gemini-(\d+(?:\.\d+)?)/', $n, $m) ? (float) $m[1] : 0;
-        $flash   = array_filter($nombres, fn ($n) => str_starts_with($n, 'gemini-') && str_contains($n, 'flash')
-            && !preg_match('/image|tts|live|audio|embedding|thinking-exp|latest/', $n));
-
-        $grupo = fn ($n) => match (true) {
-            (bool) preg_match('/^gemini-\d+(\.\d+)?-flash$/', $n) => 0,   // estable
-            !str_contains($n, 'lite')                                => 1,   // preview / variantes
-            default                                                  => 2,   // lite
-        };
-
-        usort($flash, fn ($a, $b) => [$grupo($a), -$version($a), $a] <=> [$grupo($b), -$version($b), $b]);
-
-        foreach (['gemini-flash-latest', 'gemini-flash-lite-latest'] as $alias) {
-            if (in_array($alias, $nombres, true)) {
-                $flash[] = $alias;
-            }
-        }
-
-        return array_values($flash);
-    }
-
-    /** Primer modelo preferido (se conserva por compatibilidad). */
-    public static function elegirModelo(array $nombres, array $excluir = []): ?string
-    {
-        return self::ordenarModelos(array_values(array_diff($nombres, $excluir)))[0] ?? null;
     }
 
     /**

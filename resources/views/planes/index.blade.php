@@ -326,8 +326,8 @@
 <div class="hero">
     <h1>Planes simples, sin sorpresas</h1>
     <p>
-        Digitaliza tu negocio con el sistema POS mas completo de Colombia.
-        Empieza gratis y escala cuando lo necesites.
+        El POS para heladerias, merengonerias y negocios de postres.
+        Empieza gratis 30 dias y escala cuando lo necesites.
     </p>
     <span class="badge-ahorro">Plan anual — ahorra $120,000 COP vs trimestral</span>
 </div>
@@ -345,16 +345,18 @@
         <ul class="plan-features">
             <li class="seccion-titulo">Limites</li>
             <li><span class="check">+</span> Hasta 250 productos</li>
-            <li><span class="check">+</span> 2 usuarios (1 gerente + 1 auxiliar)</li>
+            <li><span class="check">+</span> Hasta 2 sedes</li>
+            <li><span class="check">+</span> 2 usuarios por sede</li>
             <li class="seccion-titulo">Punto de venta</li>
-            <li><span class="check">+</span> Nueva venta rapida</li>
-            <li><span class="check">+</span> Tiquete POS fisico</li>
-            <li><span class="check">+</span> Ventas a credito</li>
-            <li><span class="check">+</span> Devoluciones</li>
-            <li><span class="cross">-</span> Factura electronica DIAN</li>
+            <li><span class="check">+</span> Caja con fotos y modo cliente</li>
+            <li><span class="check">+</span> Pedidos a nombre del cliente con turno</li>
+            <li><span class="check">+</span> Comandas y pantalla de cocina</li>
+            <li><span class="check">+</span> Efectivo, Nequi, Daviplata y tarjeta</li>
+            <li><span class="check">+</span> Tiquete POS y cierre de caja</li>
             <li class="seccion-titulo">Inventario</li>
-            <li><span class="check">+</span> Captura con foto e IA</li>
-            <li><span class="check">+</span> Crear productos manual</li>
+            <li><span class="check">+</span> Insumos por sede con alertas</li>
+            <li><span class="check">+</span> Recetas que descuentan cada venta</li>
+            <li><span class="check">+</span> Compras a proveedores</li>
             <li><span class="cross">-</span> Reportes PDF</li>
             <li class="seccion-titulo">Soporte</li>
             <li><span class="cross">-</span> Soporte prioritario</li>
@@ -374,20 +376,18 @@
         <ul class="plan-features">
             <li class="seccion-titulo">Limites</li>
             <li><span class="check">+</span> Productos ilimitados</li>
-            <li><span class="check">+</span> Usuarios ilimitados</li>
+            <li><span class="check">+</span> Sedes y usuarios ilimitados</li>
             <li class="seccion-titulo">Punto de venta</li>
-            <li><span class="check">+</span> Nueva venta rapida</li>
-            <li><span class="check">+</span> Tiquete POS fisico</li>
-            <li><span class="check">+</span> Ventas a credito</li>
-            <li><span class="check">+</span> Devoluciones</li>
-            <li><span class="check">+</span> Factura electronica DIAN</li>
+            <li><span class="check">+</span> Caja con fotos y modo cliente</li>
+            <li><span class="check">+</span> Pedidos a nombre del cliente con turno</li>
+            <li><span class="check">+</span> Comandas y pantalla de cocina</li>
+            <li><span class="check">+</span> Efectivo, Nequi, Daviplata y tarjeta</li>
+            <li><span class="check">+</span> Tiquete POS y cierre de caja</li>
             <li class="seccion-titulo">Inventario y reportes</li>
-            <li><span class="check">+</span> Captura con foto e IA</li>
-            <li><span class="check">+</span> Reporte inventario completo</li>
-            <li><span class="check">+</span> Reporte alertas stock bajo</li>
+            <li><span class="check">+</span> Insumos por sede con alertas</li>
+            <li><span class="check">+</span> Recetas, costos y margen por producto</li>
+            <li><span class="check">+</span> Compras a proveedores y kardex</li>
             <li><span class="check">+</span> Reporte ventas dia/semana/mes</li>
-            <li><span class="check">+</span> Kardex de producto</li>
-            <li><span class="check">+</span> Reporte cartera de creditos</li>
             <li><span class="check">+</span> Estado financiero mensual</li>
             <li class="seccion-titulo">Soporte</li>
             <li><span class="check">+</span> Soporte por WhatsApp</li>
@@ -409,14 +409,12 @@
         <div class="plan-cobro">$420,000 COP al ano</div>
         <hr class="plan-divider">
         <ul class="plan-features">
-            <li class="seccion-titulo">Todo lo del plan trimestral mas:</li>
-            <li><span class="check">+</span> Productos ilimitados</li>
-            <li><span class="check">+</span> Usuarios ilimitados</li>
-            <li><span class="check">+</span> Tiquete POS fisico</li>
-            <li><span class="check">+</span> Factura electronica DIAN</li>
+            <li class="seccion-titulo">Todo lo del plan trimestral:</li>
+            <li><span class="check">+</span> Productos, sedes y usuarios ilimitados</li>
+            <li><span class="check">+</span> Caja, comandas y cocina</li>
+            <li><span class="check">+</span> Insumos, recetas y compras</li>
             <li><span class="check">+</span> Todos los reportes PDF</li>
             <li><span class="check">+</span> Kardex y estado financiero</li>
-            <li><span class="check">+</span> Captura con foto e IA</li>
             <li class="seccion-titulo">Beneficios exclusivos</li>
             <li><span class="check">+</span> Capacitacion virtual incluida</li>
             <li><span class="check">+</span> Soporte prioritario 24/7</li>
@@ -464,8 +462,14 @@
                 <td>Ilimitados</td>
             </tr>
             <tr>
-                <td>Usuarios</td>
+                <td>Sedes</td>
                 <td>2</td>
+                <td>Ilimitadas</td>
+                <td>Ilimitadas</td>
+            </tr>
+            <tr>
+                <td>Usuarios</td>
+                <td>2 por sede</td>
                 <td>Ilimitados</td>
                 <td>Ilimitados</td>
             </tr>
@@ -476,13 +480,13 @@
                 <td><span class="si">+</span></td>
             </tr>
             <tr>
-                <td>Factura electronica DIAN</td>
-                <td><span class="no">-</span></td>
+                <td>Comandas y pantalla de cocina</td>
+                <td><span class="si">+</span></td>
                 <td><span class="si">+</span></td>
                 <td><span class="si">+</span></td>
             </tr>
             <tr>
-                <td>Captura con foto e IA</td>
+                <td>Insumos, recetas y compras</td>
                 <td><span class="si">+</span></td>
                 <td><span class="si">+</span></td>
                 <td><span class="si">+</span></td>
@@ -539,7 +543,7 @@
 
     <div class="faq-item">
         <h4>Necesito tarjeta de credito para el trial?</h4>
-        <p>No. El trial de 30 dias es completamente gratuito y no requiere ningun dato de pago. Solo necesitas tu RUT y un correo electronico.</p>
+        <p>No. El trial de 30 dias es completamente gratuito y no requiere ningun dato de pago. Solo necesitas los datos de tu negocio y un correo electronico.</p>
     </div>
 
     <div class="faq-item">
@@ -553,8 +557,13 @@
     </div>
 
     <div class="faq-item">
-        <h4>Como funciona la factura electronica?</h4>
-        <p>Disponible desde el plan trimestral. El sistema se conecta directamente con la DIAN para emitir facturas electronicas validas. El tiquete POS es valido para ventas al consumidor final menores a 5 UVT (~$235,000 COP).</p>
+        <h4>POS Topping emite factura electronica?</h4>
+        <p>No. POS Topping no incluye facturacion electronica en ninguno de sus planes. Cada venta genera un tiquete POS para el cliente.</p>
+    </div>
+
+    <div class="faq-item">
+        <h4>Puedo recibir pedidos por WhatsApp?</h4>
+        <p>Si, con el bot de pedidos a domicilio: un modulo adicional que se contrata aparte y no esta incluido en el trial. Contactanos por WhatsApp para conocerlo.</p>
     </div>
 
     <div class="faq-item">
