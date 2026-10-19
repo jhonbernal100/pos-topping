@@ -17,6 +17,8 @@ class Tenant extends Model
         'subscription_price',
         // Marca (apariencia de la caja)
         'logo', 'color_primario', 'color_secundario', 'color_fondo',
+        'wa_activo', 'wa_session_id', 'wa_numero', 'pago_nequi', 'pago_daviplata', 'pago_titular',
+        'domicilio_minimo', 'wa_bienvenida',
     ];
 
     protected $casts = [
@@ -25,12 +27,24 @@ class Tenant extends Model
         'trial_ends_at'           => 'datetime',
         'subscription_ends_at'    => 'datetime',
         'subscription_price'      => 'integer',
+        'wa_activo'               => 'boolean',
+        'domicilio_minimo'        => 'integer',
     ];
 
     // Límites de la demo de 30 días (null = ilimitado en planes pagos)
     public const TRIAL_MAX_SEDES             = 2;
     public const TRIAL_MAX_USUARIOS_POR_SEDE = 2;
     public const TRIAL_MAX_PRODUCTOS         = 20;
+
+    /** El bot de domicilios por WhatsApp es exclusivo del plan anual activo. */
+    public function tieneBotDomicilios(): bool
+    {
+        if ($this->subscription_status === 'activa' && $this->subscription_plan === 'anual') {
+            return true;
+        }
+        // Para pruebas antes de activar el plan (OPENWA_PERMITIR_TRIAL=true en .env)
+        return $this->esTrial() && (bool) config('services.openwa.permitir_trial');
+    }
 
     // Precio mensual por sede y meses que se cobran en cada pago
     public const PLANES = [

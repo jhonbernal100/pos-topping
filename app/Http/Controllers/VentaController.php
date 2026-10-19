@@ -21,6 +21,7 @@ class VentaController extends Controller
     {
         $ventas = Venta::with(['sede', 'pagos'])->withCount('detalles')
             ->where('sede_id', session('sede_id'))
+            ->where('estado', '!=', 'borrador')   // domicilios sin pagar: se ven en Domicilios
             ->orderByDesc('created_at')
             ->paginate(20);
 

@@ -281,6 +281,13 @@
                 Cocina
             </a>
 
+            @if($usuarioActual->tenant?->tieneBotDomicilios())
+                <a href="/domicilios"
+                   class="{{ request()->is('domicilios*') ? 'activo' : '' }}">
+                    Domicilios
+                </a>
+            @endif
+
             <a href="/caja/cierre"
                class="{{ request()->is('caja*') ? 'activo' : '' }}">
                 Cierre de caja

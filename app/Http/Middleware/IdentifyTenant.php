@@ -16,6 +16,7 @@ class IdentifyTenant
             $request->is('admin*') ||
             $request->is('trial*') ||
             $request->is('planes*') ||
+            $request->is('pedir/*') ||
             $request->is('login') ||
             $request->is('logout')
         ) {

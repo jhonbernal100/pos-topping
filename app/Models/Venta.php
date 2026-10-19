@@ -15,6 +15,9 @@ class Venta extends Model
         // POS Topping
         'nombre_pedido', 'numero_turno', 'canal', 'estado_preparacion',
         'preparacion_at', 'listo_at', 'entregado_at',
+        // Domicilios por WhatsApp
+        'telefono_cliente', 'direccion_entrega', 'latitud_entrega', 'longitud_entrega', 'distancia_km',
+        'costo_domicilio', 'estado_pago', 'comprobante', 'lectura_comprobante', 'motivo_rechazo', 'conversacion_wa_id',
     ];
 
     protected $casts = [
@@ -28,6 +31,11 @@ class Venta extends Model
         'preparacion_at'        => 'datetime',
         'listo_at'              => 'datetime',
         'entregado_at'          => 'datetime',
+        'costo_domicilio'       => 'integer',
+        'distancia_km'          => 'float',
+        'latitud_entrega'       => 'float',
+        'longitud_entrega'      => 'float',
+        'lectura_comprobante'   => 'array',
     ];
 
     protected static function booted(): void

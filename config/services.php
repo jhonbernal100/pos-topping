@@ -8,6 +8,14 @@ return [
         'from'     => env('INFOBIP_FROM', 'POS-Ferretero'),
     ],
 
+    // Pasarela de WhatsApp (OpenWA autoalojado). Ver docs de despliegue del bot.
+    'openwa' => [
+        'url'            => env('OPENWA_URL'),              // ej: https://wa.avanzas.digital
+        'api_key'        => env('OPENWA_API_KEY'),
+        'webhook_secret' => env('OPENWA_WEBHOOK_SECRET'),
+        'permitir_trial' => env('OPENWA_PERMITIR_TRIAL', false),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

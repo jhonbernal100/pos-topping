@@ -20,6 +20,8 @@ use App\Http\Controllers\CierreCajaController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\DomicilioController;
+use App\Http\Controllers\PedidoWebController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MensajeController;
 use App\Http\Middleware\EnsureSuperAdmin;
@@ -50,6 +52,10 @@ Route::prefix('trial')->group(function () {
 });
 
 Route::get('/planes', [PlanesController::class, 'index'])->name('planes.index');
+
+// Menú web público para pedidos a domicilio (enlace que envía el bot de WhatsApp)
+Route::get('/pedir/{token}',  [PedidoWebController::class, 'mostrar'])->name('pedir.mostrar');
+Route::post('/pedir/{token}', [PedidoWebController::class, 'enviar'])->middleware('throttle:20,1')->name('pedir.enviar');
 
 Route::middleware('auth')->group(function () {
     Route::get('/mensajes/no-leidos',  [MensajeController::class, 'noLeidos'])->name('mensajes.noLeidos');
@@ -82,6 +88,19 @@ Route::middleware('auth')->group(function () {
         Route::post('/cierre',                    [CierreCajaController::class, 'store'])->name('caja.cerrar');
         Route::get('/cierres',                    [CierreCajaController::class, 'index'])->name('caja.cierres');
         Route::get('/cierres/{cierre}/imprimir',  [CierreCajaController::class, 'imprimir'])->name('caja.imprimir');
+    });
+
+    // Domicilios por WhatsApp (plan anual — validado en DomicilioController)
+    Route::prefix('domicilios')->group(function () {
+        Route::get('/',                        [DomicilioController::class, 'index'])->name('domicilios.index');
+        Route::get('/pedidos',                 [DomicilioController::class, 'pedidos'])->name('domicilios.pedidos');
+        Route::get('/configuracion',           [DomicilioController::class, 'configuracion'])->name('domicilios.configuracion');
+        Route::post('/configuracion',          [DomicilioController::class, 'guardarConfiguracion'])->name('domicilios.guardarConfiguracion');
+        Route::get('/{venta}/comprobante',     [DomicilioController::class, 'comprobante'])->whereNumber('venta')->name('domicilios.comprobante');
+        Route::post('/{venta}/confirmar-pago', [DomicilioController::class, 'confirmarPago'])->whereNumber('venta')->name('domicilios.confirmarPago');
+        Route::post('/{venta}/rechazar-pago',  [DomicilioController::class, 'rechazarPago'])->whereNumber('venta')->name('domicilios.rechazarPago');
+        Route::post('/{venta}/despachar',      [DomicilioController::class, 'despachar'])->whereNumber('venta')->name('domicilios.despachar');
+        Route::post('/{venta}/cancelar',       [DomicilioController::class, 'cancelar'])->whereNumber('venta')->name('domicilios.cancelar');
     });
 
     // Insumos por sede (contar y editar solo gerentes — validado en InsumoController)

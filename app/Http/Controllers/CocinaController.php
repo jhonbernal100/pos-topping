@@ -69,7 +69,20 @@ class CocinaController extends Controller
                 break;
         }
 
+        $antes = $venta->estado_preparacion;
         $venta->update($campos);
+
+        // Domicilios por WhatsApp: avisar al cliente cuando empieza la preparación y cuando sale
+        if ($venta->canal === 'domicilio' && $antes !== $data['estado']) {
+            $aviso = match ($data['estado']) {
+                'en_preparacion' => $antes === 'pendiente' ? 'preparacion' : null,
+                'entregado'      => 'despachado',
+                default          => null,
+            };
+            if ($aviso) {
+                app(\App\Services\Domicilios\Notificador::class)->aviso($venta, $aviso);
+            }
+        }
 
         return response()->json([
             'success' => true,
