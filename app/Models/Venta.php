@@ -18,6 +18,9 @@ class Venta extends Model
         // Domicilios por WhatsApp
         'telefono_cliente', 'direccion_entrega', 'latitud_entrega', 'longitud_entrega', 'distancia_km',
         'costo_domicilio', 'estado_pago', 'comprobante', 'lectura_comprobante', 'motivo_rechazo', 'conversacion_wa_id',
+        // Convenios (ej: Rappi) y cuentas por cobrar
+        'codigo_externo', 'ajuste_porcentaje', 'ajuste_valor',
+        'estado_cobro', 'vence_cobro', 'cobrado_at', 'referencia_cobro',
     ];
 
     protected $casts = [
@@ -36,6 +39,10 @@ class Venta extends Model
         'latitud_entrega'       => 'float',
         'longitud_entrega'      => 'float',
         'lectura_comprobante'   => 'array',
+        'ajuste_porcentaje'     => 'float',
+        'ajuste_valor'          => 'integer',
+        'vence_cobro'           => 'date',
+        'cobrado_at'            => 'datetime',
     ];
 
     protected static function booted(): void

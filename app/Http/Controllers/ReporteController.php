@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 
 /**
  * Reportes de POS Topping, por sede o de todas las sedes (solo el propietario).
- * Todo pedido se paga por adelantado: no hay créditos ni cartera.
+ * Todo pedido se paga por adelantado, salvo convenios a crédito (ej: Rappi), que van en Por cobrar.
  */
 class ReporteController extends Controller
 {

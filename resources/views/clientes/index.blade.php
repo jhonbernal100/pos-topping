@@ -32,7 +32,14 @@
                 @forelse($clientes as $cliente)
                 <tr style="border-bottom:1px solid #eee;" class="fila-cliente"
                     data-nombre="{{ strtolower($cliente->nombre) }}">
-                    <td style="padding:12px;font-size:14px;font-weight:bold;">{{ $cliente->nombre }}</td>
+                    <td style="padding:12px;font-size:14px;font-weight:bold;">
+                        {{ $cliente->nombre }}
+                        @if($cliente->tieneConvenio())
+                            <div style="font-size:11px;font-weight:normal;color:#664d03;">
+                                Convenio{{ $cliente->etiquetaAjuste() ? ' ' . $cliente->etiquetaAjuste() : '' }}{{ $cliente->venta_credito ? ' · por cobrar a ' . $cliente->dias_credito . ' días' : '' }}
+                            </div>
+                        @endif
+                    </td>
                     <td style="padding:12px;font-size:13px;">{{ $cliente->tipo_documento }} {{ $cliente->numero_documento ?? '—' }}</td>
                     <td style="padding:12px;font-size:13px;">{{ $cliente->telefono ?? '—' }}</td>
                     <td style="padding:12px;font-size:13px;">{{ $cliente->ciudad ?? '—' }}</td>

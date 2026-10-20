@@ -23,9 +23,7 @@ class ClienteController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nombre' => 'required|string|max:191',
-        ]);
+        $request->validate($this->reglas(), $this->mensajes());
 
         $cliente = Cliente::create([
             'tenant_id'        => session('tenant_id'),
@@ -37,7 +35,7 @@ class ClienteController extends Controller
             'direccion'        => $request->direccion,
             'ciudad'           => $request->ciudad,
             'activo'           => true,
-        ]);
+        ] + $this->convenio($request));
 
         return response()->json([
             'success' => true,
@@ -53,9 +51,7 @@ class ClienteController extends Controller
 
     public function actualizar(Request $request, Cliente $cliente)
     {
-        $request->validate([
-            'nombre' => 'required|string|max:191',
-        ]);
+        $request->validate($this->reglas(), $this->mensajes());
 
         $cliente->update([
             'nombre'           => $request->nombre,
@@ -65,11 +61,42 @@ class ClienteController extends Controller
             'email'            => $request->email,
             'direccion'        => $request->direccion,
             'ciudad'           => $request->ciudad,
-        ]);
+        ] + $this->convenio($request));
 
         return response()->json([
             'success' => true,
             'mensaje' => 'Cliente actualizado correctamente',
         ]);
+    }
+
+    private function reglas(): array
+    {
+        return [
+            'nombre'            => 'required|string|max:191',
+            'email'             => 'nullable|email|max:191',
+            'ajuste_porcentaje' => 'nullable|numeric|min:-90|max:200',
+            'dias_credito'      => 'nullable|integer|min:0|max:180',
+        ];
+    }
+
+    private function mensajes(): array
+    {
+        return [
+            'ajuste_porcentaje.min' => 'El descuento no puede ser mayor al 90 %.',
+            'ajuste_porcentaje.max' => 'El recargo no puede ser mayor al 200 %.',
+        ];
+    }
+
+    // Convenio (ej: Rappi): % sobre la carta, venta a crédito y código de pedido
+    private function convenio(Request $request): array
+    {
+        $credito = $request->boolean('venta_credito');
+
+        return [
+            'ajuste_porcentaje' => round((float) ($request->ajuste_porcentaje ?? 0), 2),
+            'venta_credito'     => $credito,
+            'dias_credito'      => $credito ? (int) ($request->dias_credito ?? 0) : 0,
+            'pide_codigo'       => $request->boolean('pide_codigo'),
+        ];
     }
 }

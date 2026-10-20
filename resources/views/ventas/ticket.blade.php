@@ -34,6 +34,9 @@
     <div class="linea"></div>
     <div class="centro">Pedido de</div>
     <div class="pedido">{{ $venta->etiquetaPedido() }}</div>
+    @if($venta->cliente && $venta->codigo_externo)
+        <div class="centro">{{ $venta->cliente->nombre }} · Pedido {{ $venta->codigo_externo }}</div>
+    @endif
 
     @if($venta->estado === 'anulada')
         <div class="pedido">*** ANULADA ***</div>
@@ -70,6 +73,11 @@
             <span>{{ $dinero($p->monto) }}</span>
         </div>
     @endforeach
+
+    @if($venta->estado_cobro)
+        <div class="fila"><span>{{ $venta->estado_cobro === 'cobrado' ? 'Cobrado' : 'Vence' }}</span>
+            <span>{{ ($venta->estado_cobro === 'cobrado' ? $venta->cobrado_at : $venta->vence_cobro)?->format('d/m/Y') }}</span></div>
+    @endif
 
     @if($venta->cambio > 0)
         <div class="fila"><span>Recibido</span><span>{{ $dinero($venta->monto_pagado) }}</span></div>

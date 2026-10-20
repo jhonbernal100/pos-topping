@@ -131,6 +131,9 @@
                 </table>
                 <div style="font-size:12px;color:#888;margin-top:8px;">
                     Nequi, Daviplata y tarjeta no entran a la caja: compáralos con la app de cada medio.
+                    @if(isset($resumen['metodos']['credito']))
+                        Los pedidos por cobrar (Rappi y otros convenios) tampoco: se concilian en Por cobrar.
+                    @endif
                 </div>
             </div>
 

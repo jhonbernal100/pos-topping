@@ -17,6 +17,7 @@ use App\Http\Controllers\SedeActivaController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\CocinaController;
 use App\Http\Controllers\CierreCajaController;
+use App\Http\Controllers\CuentaCobrarController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\RecetaController;
@@ -164,6 +165,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/crear',               [GastoController::class, 'crear'])->name('gastos.crear');
         Route::post('/',                   [GastoController::class, 'store'])->name('gastos.store');
         Route::delete('/{gasto}/eliminar', [GastoController::class, 'eliminar'])->name('gastos.eliminar');
+    });
+
+    // Cuentas por cobrar de convenios como Rappi (gerentes y propietario)
+    Route::prefix('cobros')->group(function () {
+        Route::get('/',                  [CuentaCobrarController::class, 'index'])->name('cobros.index');
+        Route::post('/marcar',           [CuentaCobrarController::class, 'marcar'])->name('cobros.marcar');
+        Route::post('/{venta}/deshacer', [CuentaCobrarController::class, 'deshacer'])->name('cobros.deshacer');
     });
 
     // Reportes por sede (solo gerentes y propietario — validado en ReporteController)

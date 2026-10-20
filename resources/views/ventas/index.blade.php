@@ -62,6 +62,11 @@
                             @if($venta->canal === 'domicilio')
                                 <div style="font-size:11px;color:#0c447c;">Domicilio</div>
                             @endif
+                            @if($venta->cliente && ($venta->codigo_externo || $venta->ajuste_porcentaje))
+                                <div style="font-size:11px;color:#664d03;">
+                                    {{ $venta->cliente->nombre }}{{ $venta->codigo_externo ? ' · ' . $venta->codigo_externo : '' }}
+                                </div>
+                            @endif
                         </td>
                         <td style="padding:12px;text-align:center;font-size:13px;">{{ $venta->detalles_count }}</td>
                         <td style="padding:12px;font-size:13px;">{{ $venta->resumenPago() }}</td>

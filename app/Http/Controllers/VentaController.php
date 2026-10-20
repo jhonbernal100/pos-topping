@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CategoriaMenu;
+use App\Models\Cliente;
 use App\Models\InsumoStock;
 use App\Models\Producto;
 use App\Models\RecetaItem;
@@ -19,7 +20,7 @@ class VentaController extends Controller
 {
     public function index()
     {
-        $ventas = Venta::with(['sede', 'pagos'])->withCount('detalles')
+        $ventas = Venta::with(['sede', 'pagos', 'cliente:id,nombre'])->withCount('detalles')
             ->where('sede_id', session('sede_id'))
             ->where('estado', '!=', 'borrador')   // domicilios sin pagar: se ven en Domicilios
             ->orderByDesc('created_at')
@@ -87,7 +88,23 @@ class VentaController extends Controller
             ];
         })->filter(fn ($c) => $c['productos']->isNotEmpty())->values();
 
-        return view('ventas.crear', compact('menu', 'sede', 'tenant'));
+        // Clientes con convenio (ej: Rappi +25 %, por cobrar a 20 días)
+        $convenios = Cliente::where('activo', true)
+            ->where(fn ($q) => $q->where('ajuste_porcentaje', '!=', 0)->orWhere('venta_credito', true)->orWhere('pide_codigo', true))
+            ->orderBy('nombre')
+            ->get()
+            ->map(fn ($c) => [
+                'id'       => $c->id,
+                'nombre'   => $c->nombre,
+                'ajuste'   => (float) $c->ajuste_porcentaje,
+                'etiqueta' => $c->etiquetaAjuste(),
+                'credito'  => $c->venta_credito,
+                'dias'     => $c->dias_credito,
+                'codigo'   => $c->pide_codigo,
+            ])
+            ->values();
+
+        return view('ventas.crear', compact('menu', 'sede', 'tenant', 'convenios'));
     }
 
     public function store(Request $request, CalculadoraPedido $calculadora, InventarioService $inventario)
@@ -101,7 +118,9 @@ class VentaController extends Controller
             'items.*.modificadores'   => 'nullable|array|max:30',
             'items.*.modificadores.*' => 'integer',
             'items.*.notas'           => 'nullable|string|max:191',
-            'pagos'                   => 'required|array|min:1|max:4',
+            'cliente_id'              => 'nullable|integer',
+            'codigo_externo'          => 'nullable|string|max:40',
+            'pagos'                   => 'nullable|array|max:4',
             'pagos.*.metodo'          => 'required|in:efectivo,nequi,daviplata,tarjeta',
             'pagos.*.monto'           => 'required|integer|min:1',
             'pagos.*.referencia'      => 'nullable|string|max:60',
@@ -123,9 +142,50 @@ class VentaController extends Controller
             return $this->error($e->getMessage());
         }
 
-        $total = (int) $items->sum('subtotal');
+        $subtotalCarta = (int) $items->sum('subtotal');
 
-        // 2. Validar pagos (todo se paga por adelantado)
+        // 1b. Convenio del cliente (ej: Rappi): precio ajustado, código de pedido y venta por cobrar
+        $cliente = null;
+        $codigo  = trim((string) ($data['codigo_externo'] ?? '')) ?: null;
+
+        if (!empty($data['cliente_id'])) {
+            $cliente = Cliente::where('activo', true)->find((int) $data['cliente_id']);
+            if (!$cliente) {
+                return $this->error('El cliente elegido ya no está disponible.');
+            }
+
+            if ($cliente->pide_codigo && !$codigo) {
+                return $this->error("Escribe el código del pedido de {$cliente->nombre}.");
+            }
+
+            if ($codigo && Venta::where('cliente_id', $cliente->id)->where('codigo_externo', $codigo)->where('estado', '!=', 'anulada')->exists()) {
+                return $this->error("El pedido {$codigo} de {$cliente->nombre} ya está registrado.");
+            }
+
+            if ($cliente->ajuste_porcentaje != 0) {
+                $items = $items->map(function ($it) use ($cliente) {
+                    $unitario = $cliente->ajustarPrecio($it['precio_unitario']);
+                    $base     = $cliente->ajustarPrecio($it['precio_base']);
+                    return array_merge($it, [
+                        'precio_base'        => $base,
+                        'precio_adicionales' => $unitario - $base,
+                        'precio_unitario'    => $unitario,
+                        'subtotal'           => $unitario * $it['cantidad'],
+                    ]);
+                });
+            }
+        }
+
+        $total   = (int) $items->sum('subtotal');
+        $credito = $cliente?->venta_credito ?? false;
+
+        // 2. Validar pagos (todo se paga por adelantado, salvo convenios a crédito)
+        if ($credito) {
+            $data['pagos'] = [['metodo' => 'credito', 'monto' => $total, 'referencia' => $codigo]];
+        } elseif (empty($data['pagos'])) {
+            return $this->error('Registra el pago.');
+        }
+
         $pagos       = collect($data['pagos']);
         $recibido    = (int) $pagos->sum('monto');
         $electronico = (int) $pagos->where('metodo', '!=', 'efectivo')->sum('monto');
@@ -142,7 +202,7 @@ class VentaController extends Controller
 
         // 3. Registrar todo en una sola transacción
         try {
-            $venta = DB::transaction(function () use ($data, $items, $pagos, $total, $recibido, $cambio, $sedeId, $inventario) {
+            $venta = DB::transaction(function () use ($data, $items, $pagos, $total, $recibido, $cambio, $sedeId, $inventario, $cliente, $codigo, $credito, $subtotalCarta) {
 
                 // Reventa con receta: se controla con los insumos de la sede
                 $reventa   = $items->filter(fn ($i) => $i['producto']->tipo_menu === 'reventa');
@@ -175,16 +235,22 @@ class VentaController extends Controller
                 $venta = Venta::create([
                     'tenant_id'          => session('tenant_id'),
                     'sede_id'            => $sedeId,
+                    'cliente_id'         => $cliente?->id,
+                    'codigo_externo'     => $codigo,
                     'nombre_pedido'      => trim($data['nombre_pedido']),
                     'numero_turno'       => $this->siguienteTurno($sedeId),
                     'canal'              => 'local',
                     'estado_preparacion' => $tieneCocina ? 'pendiente' : 'entregado',
                     'tipo_documento'     => 'ticket',
                     'estado'             => 'completada',
-                    'subtotal'           => $total,
-                    'descuento'          => 0,
+                    'subtotal'           => $subtotalCarta,
+                    'descuento'          => max(0, $subtotalCarta - $total),
+                    'ajuste_porcentaje'  => $cliente && $cliente->ajuste_porcentaje != 0 ? $cliente->ajuste_porcentaje : null,
+                    'ajuste_valor'       => $total - $subtotalCarta,
                     'total'              => $total,
                     'metodo_pago'        => $metodos->count() > 1 ? 'mixto' : $metodos->first(),
+                    'estado_cobro'       => $credito ? 'pendiente' : null,
+                    'vence_cobro'        => $credito ? now()->addDays($cliente->dias_credito)->toDateString() : null,
                     'monto_pagado'       => $recibido,
                     'cambio'             => $cambio,
                 ]);
@@ -245,12 +311,13 @@ class VentaController extends Controller
             'etiqueta' => $venta->etiquetaPedido(),
             'total'    => $total,
             'cambio'   => $cambio,
+            'codigo'   => $venta->codigo_externo,
         ]);
     }
 
     public function ticket(Venta $venta)
     {
-        $venta->load(['detalles.modificadores', 'pagos', 'sede', 'tenant']);
+        $venta->load(['detalles.modificadores', 'pagos', 'sede', 'tenant', 'cliente']);
         return view('ventas.ticket', compact('venta'));
     }
 
@@ -279,7 +346,11 @@ class VentaController extends Controller
             // Devolver insumos a la sede
             $inventario->revertirVenta($venta);
 
-            $venta->update(['estado' => 'anulada']);
+            $venta->update([
+                'estado'       => 'anulada',
+                // Pedido de convenio anulado: ya no se le cobra a la plataforma
+                'estado_cobro' => $venta->estado_cobro === 'pendiente' ? null : $venta->estado_cobro,
+            ]);
         });
 
         return response()->json(['success' => true, 'mensaje' => 'Venta anulada']);

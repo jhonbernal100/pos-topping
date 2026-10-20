@@ -75,6 +75,11 @@
     .chip.sel { background:var(--marca); color:#fff; border-color:var(--marca); }
     .contador { background:#fff; color:var(--marca); border-radius:10px; padding:0 7px; font-size:12px; font-weight:bold; }
 
+    .convenios { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+    .convenio { padding:8px 12px; border-radius:20px; border:2px solid #e5e5e5; background:#fff; cursor:pointer; font-size:13px; font-family:inherit; }
+    .convenio.activo { border-color:var(--titulo); background:var(--titulo); color:#fff; font-weight:bold; }
+    .aviso-convenio { background:#fff3cd; color:#664d03; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.4; margin-bottom:12px; }
+
     .salir-modo { display:none; position:fixed; right:10px; bottom:10px; z-index:900; padding:6px 10px; font-size:11px;
                   border-radius:12px; border:none; background:rgba(0,0,0,.25); color:#fff; cursor:pointer; }
     body.modo-cliente .salir-modo { display:block; }
@@ -110,6 +115,14 @@
     <div class="panel">
         <div class="panel-titulo">Tu pedido</div>
 
+        @if($convenios->isNotEmpty())
+            <div class="convenios" id="convenios"></div>
+            <div id="bloque-codigo" style="display:none;margin-bottom:12px;">
+                <label for="codigo-externo" id="label-codigo" style="display:block;font-size:13px;color:#666;margin-bottom:4px;">Código del pedido *</label>
+                <input id="codigo-externo" class="campo" maxlength="40" autocomplete="off" placeholder="Ej: 123456789" style="font-size:17px;">
+            </div>
+        @endif
+
         <label for="nombre-pedido" style="display:block;font-size:13px;color:#666;margin-bottom:4px;">
             ¿A nombre de quién? *
         </label>
@@ -122,7 +135,9 @@
             <span id="total" style="color:var(--marca);">$0</span>
         </div>
 
-        <div style="margin-top:14px;">
+        <div id="aviso-credito" class="aviso-convenio" style="display:none;margin-top:14px;"></div>
+
+        <div id="bloque-pago" style="margin-top:14px;">
             <div style="font-size:13px;color:#666;margin-bottom:6px;">Pago</div>
             <div id="pagos"></div>
             <button type="button" class="btn btn-gris" id="btn-dividir" onclick="agregarPago()" style="width:100%;margin-top:8px;font-size:13px;padding:8px;">
@@ -158,6 +173,8 @@
 <script>
 const MENU    = @json($menu);
 const METODOS = { efectivo: 'Efectivo', nequi: 'Nequi', daviplata: 'Daviplata', tarjeta: 'Tarjeta' };
+const CONVENIOS = @json($convenios);
+let convenio = null;   // cliente con convenio elegido (ej: Rappi), null = mostrador
 
 let categoriaActiva = MENU.length ? MENU[0].id : null;
 let carrito = [];
@@ -166,6 +183,8 @@ let config  = null;
 
 const $      = id => document.getElementById(id);
 const dinero = v => '$' + Math.round(v || 0).toLocaleString('es-CO');
+// Precio con el % del convenio, igual que Cliente::ajustarPrecio en el servidor
+const ajustar = v => convenio && convenio.ajuste ? Math.round(v * (1 + convenio.ajuste / 100)) : v;
 const esc    = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 // ------------------------------------------------------------------
@@ -221,7 +240,7 @@ function renderProductos() {
                     <span class="prod-nombre">${esc(p.nombre)}</span>
                     ${p.descripcion ? `<span class="prod-desc">${esc(p.descripcion)}</span>` : ''}
                     <span class="prod-precio">
-                        ${agotado ? '<span style="color:#c00;">Agotado</span>' : `${p.variantes.length ? 'Desde ' : ''}${dinero(p.precio)}`}
+                        ${agotado ? '<span style="color:#c00;">Agotado</span>' : `${p.variantes.length ? 'Desde ' : ''}${dinero(ajustar(p.precio))}`}
                     </span>
                 </div>
             </button>`;
@@ -325,7 +344,7 @@ function renderModal() {
     if (p.variantes.length) {
         html += seccion('Elige una opción', p.variantes.map(v => `
             <button class="chip ${c.varianteId === v.id ? 'sel' : ''}" onclick="config.varianteId = ${v.id}; renderModal();">
-                ${esc(v.nombre)} · ${dinero(v.precio)}
+                ${esc(v.nombre)} · ${dinero(ajustar(v.precio))}
             </button>`).join(''));
     }
 
@@ -370,7 +389,7 @@ function renderModal() {
                 <button class="btn btn-gris" onclick="cambiarCantidad(1)" aria-label="Más">+</button>
             </div>
             <button class="btn btn-marca" style="flex:1;font-size:17px;" onclick="agregarAlPedido()" ${deshabilitado ? 'disabled' : ''}>
-                Agregar · ${dinero(r.unitario * c.cantidad)}
+                Agregar · ${dinero(ajustar(r.unitario) * c.cantidad)}
             </button>
         </div>`;
 
@@ -435,7 +454,7 @@ function agregarAlPedido() {
 // Pedido
 // ------------------------------------------------------------------
 function totalPedido() {
-    return carrito.reduce((s, i) => s + i.unitario * i.cantidad, 0);
+    return carrito.reduce((s, i) => s + ajustar(i.unitario) * i.cantidad, 0);
 }
 
 function renderCarrito() {
@@ -445,7 +464,7 @@ function renderCarrito() {
         $('items').innerHTML = carrito.map((i, idx) => {
             const porGrupo = {};
             i.resumen.forEach(r => {
-                (porGrupo[r.grupo] ??= []).push(`${esc(r.nombre)}${r.n > 1 ? ' ×' + r.n : ''}${r.extra ? ` <strong>+${dinero(r.extra)}</strong>` : ''}`);
+                (porGrupo[r.grupo] ??= []).push(`${esc(r.nombre)}${r.n > 1 ? ' ×' + r.n : ''}${r.extra ? ` <strong>+${dinero(ajustar(r.extra))}</strong>` : ''}`);
             });
             const detalle = Object.entries(porGrupo)
                 .map(([g, ops]) => `<div><span style="color:#888;">${esc(g)}:</span> ${ops.join(', ')}</div>`)
@@ -455,7 +474,7 @@ function renderCarrito() {
                 <div class="item">
                     <div style="display:flex;justify-content:space-between;gap:8px;">
                         <strong style="font-size:15px;color:var(--titulo);">${i.cantidad} × ${esc(i.producto.nombre)}${i.varianteNombre ? ' (' + esc(i.varianteNombre) + ')' : ''}</strong>
-                        <strong style="font-size:15px;white-space:nowrap;">${dinero(i.unitario * i.cantidad)}</strong>
+                        <strong style="font-size:15px;white-space:nowrap;">${dinero(ajustar(i.unitario) * i.cantidad)}</strong>
                     </div>
                     <div style="font-size:12px;color:#555;margin-top:4px;line-height:1.5;">
                         ${detalle}
@@ -497,6 +516,54 @@ function montoPago(i) {
     const p = pagos[i];
     if (pagos.length === 1 && (p.monto === null || p.monto === '')) return totalPedido();
     return parseInt(p.monto || 0, 10);
+}
+
+// ------------------------------------------------------------------
+// Convenios (ej: Rappi): precio con %, código de pedido y venta por cobrar
+// ------------------------------------------------------------------
+function renderConvenios() {
+    if (!$('convenios')) return;
+
+    $('convenios').innerHTML =
+        `<button type="button" class="convenio ${!convenio ? 'activo' : ''}" onclick="elegirConvenio(null)">Mostrador</button>` +
+        CONVENIOS.map(c => `
+            <button type="button" class="convenio ${convenio && convenio.id === c.id ? 'activo' : ''}" onclick="elegirConvenio(${c.id})">
+                ${esc(c.nombre)}${c.etiqueta ? ' ' + esc(c.etiqueta) : ''}
+            </button>`).join('');
+
+    $('bloque-codigo').style.display = convenio && convenio.codigo ? 'block' : 'none';
+    if (convenio) $('label-codigo').textContent = `Código del pedido ${convenio.nombre} *`;
+
+    const credito = !!(convenio && convenio.credito);
+    $('bloque-pago').style.display  = credito ? 'none' : 'block';
+    $('aviso-credito').style.display = credito ? 'block' : 'none';
+    if (credito) {
+        $('aviso-credito').innerHTML = `<strong>No se cobra en caja.</strong> Queda por cobrar a ${esc(convenio.nombre)}`
+            + (convenio.dias ? `, paga en unos ${convenio.dias} días.` : '.');
+    }
+    $('btn-cobrar').textContent = textoBoton();
+}
+
+function textoBoton() {
+    return convenio && convenio.credito ? `Registrar pedido ${convenio.nombre}` : 'Cobrar';
+}
+
+function elegirConvenio(id) {
+    const anterior = convenio;
+    convenio = CONVENIOS.find(c => c.id === id) || null;
+
+    // Proponer el nombre del convenio para llamar el pedido (ej: RAPPI)
+    const nombre = $('nombre-pedido');
+    if (convenio && (!nombre.value.trim() || (anterior && nombre.value.trim() === anterior.nombre))) {
+        nombre.value = convenio.nombre;
+    } else if (!convenio && anterior && nombre.value.trim() === anterior.nombre) {
+        nombre.value = '';
+    }
+
+    pagos = [{ metodo: 'efectivo', monto: null, referencia: '' }];
+    renderConvenios();
+    renderCarrito();
+    if (convenio && convenio.codigo) $('codigo-externo').focus();
 }
 
 function renderPagos() {
@@ -623,9 +690,19 @@ async function cobrar() {
     }
     if (!carrito.length) { mostrarError('Agrega al menos un producto.'); return; }
 
+    const credito = !!(convenio && convenio.credito);
+    const codigo  = $('codigo-externo') ? $('codigo-externo').value.trim() : '';
+    if (convenio && convenio.codigo && !codigo) {
+        mostrarError(`Escribe el código del pedido de ${convenio.nombre}.`);
+        $('codigo-externo').focus();
+        return;
+    }
+
     const e = estadoPago();
-    if (e.excedeElectronico) { mostrarError('Los pagos electrónicos no pueden superar el total.'); return; }
-    if (e.falta > 0) { mostrarError('Faltan ' + dinero(e.falta) + ' por pagar.'); return; }
+    if (!credito) {
+        if (e.excedeElectronico) { mostrarError('Los pagos electrónicos no pueden superar el total.'); return; }
+        if (e.falta > 0) { mostrarError('Faltan ' + dinero(e.falta) + ' por pagar.'); return; }
+    }
 
     const payload = {
         nombre_pedido: nombre,
@@ -642,7 +719,9 @@ async function cobrar() {
                 notas:         i.notas || null,
             };
         }),
-        pagos: pagos
+        cliente_id:     convenio ? convenio.id : null,
+        codigo_externo: convenio && codigo ? codigo : null,
+        pagos: credito ? [] : pagos
             .map((p, i) => ({ metodo: p.metodo, monto: montoPago(i), referencia: p.referencia || null }))
             .filter(p => p.monto > 0),
     };
@@ -666,21 +745,22 @@ async function cobrar() {
         if (!data.success) {
             mostrarError(data.mensaje ?? data.message ?? 'No se pudo registrar la venta.');
         } else {
-            mostrarConfirmacion(data);
+            mostrarConfirmacion(data, credito ? convenio : null);
         }
     } catch (err) {
         mostrarError('No se pudo conectar. Revisa la conexión e intenta de nuevo.');
     }
 
     btn.disabled = false;
-    btn.textContent = 'Cobrar';
+    btn.textContent = textoBoton();
 }
 
-function mostrarConfirmacion(data) {
+function mostrarConfirmacion(data, porCobrar) {
     $('ok-contenido').innerHTML = `
         <div style="font-size:15px;color:#666;">¡Gracias! Te llamaremos como</div>
         <div style="font-size:38px;font-weight:bold;margin:10px 0;color:var(--marca);">${esc(data.etiqueta)}</div>
         <div style="font-size:17px;color:var(--titulo);">Total ${dinero(data.total)}</div>
+        ${porCobrar ? `<div style="font-size:14px;margin-top:10px;background:#fff3cd;color:#664d03;border-radius:12px;padding:10px;">Por cobrar a ${esc(porCobrar.nombre)}${data.codigo ? ' · pedido ' + esc(data.codigo) : ''}</div>` : ''}
         ${data.cambio > 0 ? `<div style="font-size:26px;font-weight:bold;margin-top:12px;background:#fff3cd;color:#856404;border-radius:12px;padding:10px;">Cambio ${dinero(data.cambio)}</div>` : ''}
         <div style="display:flex;gap:10px;margin-top:20px;">
             <button class="btn btn-gris" style="flex:1;" onclick="window.open('/ventas/${data.venta_id}/ticket', '_blank')">Imprimir tiquete</button>
@@ -690,9 +770,12 @@ function mostrarConfirmacion(data) {
 }
 
 function nuevaVenta() {
-    carrito = [];
-    pagos   = [{ metodo: 'efectivo', monto: null, referencia: '' }];
+    carrito  = [];
+    pagos    = [{ metodo: 'efectivo', monto: null, referencia: '' }];
+    convenio = null;
     $('nombre-pedido').value = '';
+    if ($('codigo-externo')) $('codigo-externo').value = '';
+    renderConvenios();
     $('modal-ok').classList.remove('abierto');
     mostrarError('');
     renderCarrito();
@@ -701,6 +784,7 @@ function nuevaVenta() {
 
 // Inicio
 renderTabs();
+renderConvenios();
 renderCarrito();
 </script>
 @endif

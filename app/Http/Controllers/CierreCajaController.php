@@ -16,6 +16,7 @@ class CierreCajaController extends Controller
         'daviplata'     => 'Daviplata',
         'tarjeta'       => 'Tarjeta',
         'transferencia' => 'Transferencia',
+        'credito'       => 'Por cobrar (convenios)',
     ];
 
     // Pantalla de arqueo del día
@@ -191,7 +192,7 @@ class CierreCajaController extends Controller
         $metodos = [];
         foreach (self::METODOS as $clave => $nombre) {
             $fila = $pagos->get($clave);
-            if ($fila || $clave !== 'transferencia') {
+            if ($fila || !in_array($clave, ['transferencia', 'credito'], true)) {
                 $metodos[$clave] = [
                     'nombre' => $nombre,
                     'total'  => (int) ($fila->total ?? 0),

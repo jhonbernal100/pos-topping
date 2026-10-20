@@ -58,6 +58,8 @@
                 style="width:100%;padding:12px;font-size:16px;border:2px solid #ddd;border-radius:8px;">
         </div>
 
+        @include('clientes._convenio')
+
         <button onclick="guardar()"
             style="width:100%;padding:16px;background:#000;color:#fff;border:none;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;">
             💾 Guardar cambios
@@ -79,6 +81,7 @@ async function guardar() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
         },
         body: JSON.stringify({
@@ -89,6 +92,10 @@ async function guardar() {
             ciudad:            document.getElementById('f-ciudad').value,
             email:             document.getElementById('f-email').value,
             direccion:         document.getElementById('f-direccion').value,
+            ajuste_porcentaje: (parseFloat(document.getElementById('f-ajuste').value) || 0) * parseInt(document.getElementById('f-ajuste-tipo').value, 10),
+            venta_credito:     document.getElementById('f-credito').checked,
+            dias_credito:      parseInt(document.getElementById('f-dias').value || '0', 10),
+            pide_codigo:       document.getElementById('f-codigo').checked,
         }),
     });
 
@@ -97,7 +104,7 @@ async function guardar() {
     msg.style.display    = 'block';
     msg.style.background = data.success ? '#d4edda' : '#f8d7da';
     msg.style.color      = data.success ? '#155724' : '#721c24';
-    msg.textContent      = data.mensaje;
+    msg.textContent      = data.mensaje ?? data.message;
 
     if (data.success) {
         setTimeout(() => window.location.href = '/clientes', 1500);

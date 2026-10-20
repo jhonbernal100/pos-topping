@@ -19,6 +19,7 @@ class VentaPago extends Model
         'nequi'     => 'Nequi',
         'daviplata' => 'Daviplata',
         'tarjeta'   => 'Tarjeta',
+        'credito'   => 'Por cobrar',   // convenios como Rappi: se paga después, no entra a caja
     ];
 
     public function venta()
