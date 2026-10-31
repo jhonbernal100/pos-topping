@@ -364,7 +364,7 @@ function renderModal() {
         const chips = g.opciones.map(o => {
             const n = c.seleccion[o.id] || 0;
             return `<button class="chip ${n ? 'sel' : ''}" onclick="sumarOpcion(${g.id}, ${o.id})">
-                        ${esc(o.nombre)}${n ? `<span class="contador">${n}</span>` : ''}
+                        ${esc(o.nombre)}${!g.incluidos && o.precio > 0 ? ` <small>+${dinero(ajustar(o.precio))}</small>` : ''}${n ? `<span class="contador">${n}</span>` : ''}
                     </button>`;
         }).join('');
 

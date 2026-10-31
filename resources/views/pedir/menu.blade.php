@@ -219,7 +219,7 @@ function renderProducto() {
         html += `<div class="seccion"><div class="seccion-titulo">${esc(g.nombre)} <small>${ayuda.join(' · ')}</small></div><div class="chips">`
             + g.opciones.map(o => {
                 const n = c.seleccion[o.id] || 0;
-                return `<button class="chip ${n ? 'sel' : ''}" onclick="sumarOpcion(${g.id},${o.id})">${esc(o.nombre)}${n ? `<span class="contador">${n}</span>` : ''}</button>`;
+                return `<button class="chip ${n ? 'sel' : ''}" onclick="sumarOpcion(${g.id},${o.id})">${esc(o.nombre)}${!g.incluidos && o.precio > 0 ? ` <small>+${dinero(o.precio)}</small>` : ''}${n ? `<span class="contador">${n}</span>` : ''}</button>`;
             }).join('')
             + (elegidos ? `<button class="chip" style="color:#c00;" onclick="limpiarGrupo(${g.id})">Quitar</button>` : '')
             + '</div></div>';
