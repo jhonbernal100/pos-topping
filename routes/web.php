@@ -222,6 +222,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/ferreterias/{tenant}', [DashboardController::class, 'ferreteria'])->name('admin.ferreteria');
         Route::post('/ferreterias/{tenant}/ampliar-trial', [DashboardController::class, 'ampliarTrial'])->name('admin.ampliarTrial');
         Route::post('/ferreterias/{tenant}/cambiar-plan', [DashboardController::class, 'cambiarPlan'])->name('admin.cambiarPlan');
+        Route::post('/ferreterias/{tenant}/productos-extra', [DashboardController::class, 'productosExtra'])->name('admin.productosExtra');
         Route::delete('/ferreterias/{tenant}/eliminar', [DashboardController::class, 'eliminarFerreteria'])->name('admin.eliminarFerreteria');
         Route::post('/mensajes/enviar',        [MensajeController::class, 'enviar'])->name('admin.mensajes.enviar');
         Route::post('/mensajes/masivo',        [MensajeController::class, 'enviarMasivo'])->name('admin.mensajes.masivo');

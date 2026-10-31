@@ -363,7 +363,14 @@
                               style="font-size:15px;">
                             {{ $tenant->total_skus }}
                         </span>
-                        <div style="font-size:10px;color:#aaa;">productos</div>
+                        <div style="font-size:10px;color:#aaa;">
+                            @if($tenant->subscription_status === 'trial')
+                                de {{ \App\Models\Tenant::TRIAL_MAX_PRODUCTOS + (int) $tenant->productos_extra }}
+                                @if($tenant->productos_extra)<span style="color:#856404;font-weight:bold;">(+{{ $tenant->productos_extra }})</span>@endif
+                            @else
+                                productos
+                            @endif
+                        </div>
                     </td>
                     <td style="text-align:center;">{{ $tenant->usuarios->count() }}</td>
                     <td>{{ $tenant->created_at->format('d/m/Y') }}</td>
@@ -376,6 +383,10 @@
                             <button class="btn-sm btn-plan"
                                 onclick="abrirModalPlan({{ $tenant->id }}, '{{ addslashes($tenant->nombre) }}')">
                                 Plan
+                            </button>
+                            <button class="btn-sm btn-plan"
+                                onclick="abrirModalProductos({{ $tenant->id }}, '{{ addslashes($tenant->nombre) }}', {{ (int) $tenant->productos_extra }})">
+                                Productos
                             </button>
                             <button class="btn-sm btn-mensaje"
                                 onclick="abrirModalMensaje({{ $tenant->id }}, '{{ addslashes($tenant->nombre) }}')">
@@ -414,6 +425,24 @@
         <div class="modal-btns">
             <button class="modal-btn-cancel" onclick="cerrarModales()">Cancelar</button>
             <button class="modal-btn-ok" onclick="confirmarAmpliar()">Ampliar</button>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL PRODUCTOS EXTRA --}}
+<div class="modal-overlay" id="modal-productos">
+    <div class="modal">
+        <h3>Productos adicionales en la demo</h3>
+        <p id="modal-productos-nombre" style="font-size:13px;color:#888;margin-bottom:16px;"></p>
+        <div class="modal-campo">
+            <label>Productos extra (además de los {{ \App\Models\Tenant::TRIAL_MAX_PRODUCTOS }} de la demo)</label>
+            <input type="number" id="input-productos-extra" value="0" min="0" max="500"
+                   oninput="document.getElementById('productos-total').textContent = {{ \App\Models\Tenant::TRIAL_MAX_PRODUCTOS }} + (parseInt(this.value, 10) || 0)">
+        </div>
+        <p style="font-size:13px;margin-bottom:16px;">Límite total: <strong id="productos-total">{{ \App\Models\Tenant::TRIAL_MAX_PRODUCTOS }}</strong> productos. Pon 0 para quitar la excepción.</p>
+        <div class="modal-btns">
+            <button class="modal-btn-cancel" onclick="cerrarModales()">Cancelar</button>
+            <button class="modal-btn-ok" onclick="confirmarProductos()">Guardar</button>
         </div>
     </div>
 </div>
@@ -539,6 +568,31 @@ function abrirModalPlan(id, nombre) {
     tenantActual = id;
     document.getElementById('modal-plan-nombre').textContent = nombre;
     document.getElementById('modal-plan').classList.add('activo');
+}
+
+function abrirModalProductos(id, nombre, extra) {
+    tenantActual = id;
+    document.getElementById('modal-productos-nombre').textContent = nombre;
+    document.getElementById('input-productos-extra').value = extra;
+    document.getElementById('productos-total').textContent = {{ \App\Models\Tenant::TRIAL_MAX_PRODUCTOS }} + extra;
+    document.getElementById('modal-productos').classList.add('activo');
+}
+
+async function confirmarProductos() {
+    const extra = parseInt(document.getElementById('input-productos-extra').value || '0', 10);
+    const res   = await fetch(`/admin/ferreterias/${tenantActual}/productos-extra`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+        body: JSON.stringify({ productos_extra: extra }),
+    });
+    const data = await res.json();
+    cerrarModales();
+    mostrarFlash(data.mensaje ?? data.message);
+    setTimeout(() => location.reload(), 1500);
 }
 
 function abrirModalMensaje(id, nombre) {

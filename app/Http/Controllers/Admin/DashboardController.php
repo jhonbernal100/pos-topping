@@ -106,6 +106,22 @@ class DashboardController extends Controller
         ]);
     }
 
+    // Excepción al límite de productos de la demo para un negocio puntual
+    public function productosExtra(Request $request, Tenant $tenant)
+    {
+        $data = $request->validate(['productos_extra' => 'required|integer|min:0|max:500']);
+
+        $tenant->update(['productos_extra' => (int) $data['productos_extra']]);
+        $total = Tenant::TRIAL_MAX_PRODUCTOS + $tenant->productos_extra;
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => $tenant->productos_extra
+                ? "{$tenant->nombre}: hasta {$total} productos en la demo (+{$tenant->productos_extra})"
+                : "{$tenant->nombre}: vuelve al límite normal de " . Tenant::TRIAL_MAX_PRODUCTOS . ' productos',
+        ]);
+    }
+
     public function cambiarPlan(Request $request, Tenant $tenant)
     {
         $request->validate([

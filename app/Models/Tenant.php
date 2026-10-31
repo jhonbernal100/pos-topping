@@ -14,7 +14,7 @@ class Tenant extends Model
         'alegra_resolucion_id', 'facturacion_electronica',
         'subscription_status', 'trial_ends_at',
         'subscription_ends_at', 'subscription_plan',
-        'subscription_price',
+        'subscription_price', 'productos_extra',
         // Marca (apariencia de la caja)
         'logo', 'color_primario', 'color_secundario', 'color_fondo',
         'wa_activo', 'wa_session_id', 'wa_numero', 'pago_nequi', 'pago_daviplata', 'pago_titular',
@@ -104,7 +104,8 @@ class Tenant extends Model
 
     public function limiteProductos(): ?int
     {
-        return $this->esTrial() ? self::TRIAL_MAX_PRODUCTOS : null;
+        // productos_extra: excepción que asigna Avanzas Digital a un negocio puntual
+        return $this->esTrial() ? self::TRIAL_MAX_PRODUCTOS + (int) $this->productos_extra : null;
     }
 
     public function puedeCrearSede(): bool
