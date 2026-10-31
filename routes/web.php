@@ -206,6 +206,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/productos/{producto}/foto',          [MenuController::class, 'subirFoto'])->name('menu.subirFoto');
         Route::delete('/productos/{producto}/foto',        [MenuController::class, 'quitarFoto'])->name('menu.quitarFoto');
         Route::post('/modificadores/{modificador}/toggle', [MenuController::class, 'toggleModificador'])->name('menu.toggleModificador');
+        Route::post('/modificadores/{modificador}/actualizar', [MenuController::class, 'actualizarModificador'])->name('menu.actualizarModificador');
+        Route::delete('/modificadores/{modificador}',      [MenuController::class, 'eliminarModificador'])->name('menu.eliminarModificador');
+        Route::post('/grupos',                             [MenuController::class, 'guardarGrupo'])->name('menu.guardarGrupo');
+        Route::post('/grupos/{grupo}/actualizar',          [MenuController::class, 'actualizarGrupo'])->name('menu.actualizarGrupo');
+        Route::post('/grupos/{grupo}/modificadores',       [MenuController::class, 'guardarModificador'])->name('menu.guardarModificador');
         Route::get('/recetas',                             [RecetaController::class, 'index'])->name('menu.recetas');
         Route::post('/recetas/productos/{producto}',       [RecetaController::class, 'guardarProducto'])->name('menu.recetaProducto');
         Route::post('/recetas/opciones/{modificador}',     [RecetaController::class, 'guardarOpcion'])->name('menu.recetaOpcion');

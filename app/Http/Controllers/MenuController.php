@@ -121,6 +121,130 @@ class MenuController extends Controller
     }
 
     // ---------------------------------------------------------------
+    // Toppings y grupos de opciones
+    // ---------------------------------------------------------------
+
+    public function guardarModificador(Request $request, GrupoModificador $grupo)
+    {
+        $this->soloPropietario();
+        $data = $this->validarModificador($request);
+
+        if ($grupo->modificadores()->whereRaw('LOWER(nombre) = ?', [mb_strtolower($data['nombre'])])->exists()) {
+            return $this->errorMenu("{$data['nombre']} ya existe en {$grupo->nombre}.");
+        }
+
+        $mod = $grupo->modificadores()->create($data + [
+            'orden'  => (int) $grupo->modificadores()->max('orden') + 1,
+            'activo' => true,
+        ]);
+
+        return response()->json(['success' => true, 'mensaje' => "{$mod->nombre} agregado a {$grupo->nombre}", 'id' => $mod->id]);
+    }
+
+    public function actualizarModificador(Request $request, Modificador $modificador)
+    {
+        $this->soloPropietario();
+        $grupo = $this->grupoDe($modificador);
+        $data  = $this->validarModificador($request);
+
+        $repetido = $grupo->modificadores()->whereKeyNot($modificador->id)
+            ->whereRaw('LOWER(nombre) = ?', [mb_strtolower($data['nombre'])])->exists();
+        if ($repetido) {
+            return $this->errorMenu("{$data['nombre']} ya existe en {$grupo->nombre}.");
+        }
+
+        $modificador->update($data);
+
+        return response()->json(['success' => true, 'mensaje' => "{$modificador->nombre} actualizado"]);
+    }
+
+    // Las ventas guardan el nombre de la opción, así que el histórico no se pierde
+    public function eliminarModificador(Modificador $modificador)
+    {
+        $this->soloPropietario();
+        $this->grupoDe($modificador);
+        $nombre = $modificador->nombre;
+        $modificador->delete();
+
+        return response()->json(['success' => true, 'mensaje' => "{$nombre} eliminado"]);
+    }
+
+    public function guardarGrupo(Request $request)
+    {
+        $this->soloPropietario();
+        $data = $this->validarGrupo($request);
+
+        if (GrupoModificador::whereRaw('LOWER(nombre) = ?', [mb_strtolower($data['nombre'])])->exists()) {
+            return $this->errorMenu("Ya existe un grupo llamado {$data['nombre']}.");
+        }
+
+        $grupo = GrupoModificador::create($data + [
+            'tenant_id' => (int) session('tenant_id'),
+            'orden'     => (int) GrupoModificador::max('orden') + 1,
+            'activo'    => true,
+        ]);
+
+        return response()->json(['success' => true, 'mensaje' => "Grupo {$grupo->nombre} creado", 'id' => $grupo->id]);
+    }
+
+    public function actualizarGrupo(Request $request, GrupoModificador $grupo)
+    {
+        $this->soloPropietario();
+        $data = $this->validarGrupo($request);
+
+        if (GrupoModificador::whereKeyNot($grupo->id)->whereRaw('LOWER(nombre) = ?', [mb_strtolower($data['nombre'])])->exists()) {
+            return $this->errorMenu("Ya existe un grupo llamado {$data['nombre']}.");
+        }
+
+        $grupo->update($data);
+
+        return response()->json(['success' => true, 'mensaje' => "Grupo {$grupo->nombre} actualizado"]);
+    }
+
+    private function validarModificador(Request $request): array
+    {
+        $data = $request->validate([
+            'nombre'             => 'required|string|max:100',
+            'precio_extra'       => 'nullable|integer|min:0|max:1000000',
+            'dias_disponibles'   => 'nullable|array',
+            'dias_disponibles.*' => 'integer|between:1,7',
+        ], ['nombre.required' => 'Escribe el nombre del topping.']);
+
+        $dias = collect($data['dias_disponibles'] ?? [])->map(fn ($d) => (int) $d)->unique()->sort()->values()->all();
+
+        return [
+            'nombre'           => trim($data['nombre']),
+            'precio_extra'     => isset($data['precio_extra']) ? (int) $data['precio_extra'] : null,   // null = precio del grupo
+            'dias_disponibles' => count($dias) === 0 || count($dias) === 7 ? null : $dias,
+        ];
+    }
+
+    private function validarGrupo(Request $request): array
+    {
+        $data = $request->validate([
+            'nombre'       => 'required|string|max:100',
+            'precio_extra' => 'nullable|integer|min:0|max:1000000',
+        ], ['nombre.required' => 'Escribe el nombre del grupo.']);
+
+        return ['nombre' => trim($data['nombre']), 'precio_extra' => (int) ($data['precio_extra'] ?? 0)];
+    }
+
+    // El grupo se consulta con TenantScope: si la opción es de otro negocio, no se encuentra
+    private function grupoDe(Modificador $modificador): GrupoModificador
+    {
+        $grupo = GrupoModificador::find($modificador->grupo_id);
+        if (!$grupo) {
+            abort(403, 'No autorizado');
+        }
+        return $grupo;
+    }
+
+    private function errorMenu(string $mensaje)
+    {
+        return response()->json(['success' => false, 'mensaje' => $mensaje], 422);
+    }
+
+    // ---------------------------------------------------------------
     // Fotos de productos
     // ---------------------------------------------------------------
 
