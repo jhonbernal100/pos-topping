@@ -312,6 +312,7 @@ class VentaController extends Controller
             'total'    => $total,
             'cambio'   => $cambio,
             'codigo'   => $venta->codigo_externo,
+            'cocina'   => $venta->estado_preparacion === 'pendiente',   // lleva productos preparados: imprimir comanda
         ]);
     }
 

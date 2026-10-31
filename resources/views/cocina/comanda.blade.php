@@ -26,6 +26,11 @@
         {{ $venta->created_at->format('h:i a') }}
         @if($venta->canal === 'domicilio') · DOMICILIO @endif
     </div>
+    @if($venta->cliente && $venta->codigo_externo)
+        <div class="centro" style="font-size:16px;font-weight:bold;margin-top:4px;">
+            {{ mb_strtoupper($venta->cliente->nombre) }} · {{ $venta->codigo_externo }}
+        </div>
+    @endif
     <div class="linea"></div>
 
     @foreach($venta->detalles as $d)
@@ -43,10 +48,12 @@
 
     <div class="linea"></div>
 
-    <div class="no-print">
-        <button onclick="window.print()">Imprimir</button>
-        <button onclick="window.close()">Cerrar</button>
-    </div>
+    @unless(request()->boolean('auto'))
+        <div class="no-print">
+            <button onclick="window.print()">Imprimir</button>
+            <button onclick="window.close()">Cerrar</button>
+        </div>
+    @endunless
 
     <script>
         window.addEventListener('load', () => setTimeout(() => window.print(), 300));

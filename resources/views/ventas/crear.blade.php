@@ -151,6 +151,11 @@
         <button id="btn-cobrar" class="btn btn-marca" onclick="cobrar()" style="width:100%;margin-top:14px;font-size:19px;padding:16px;">
             Cobrar
         </button>
+
+        <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:10px;font-size:13px;color:#666;cursor:pointer;">
+            <input type="checkbox" id="auto-comanda" onchange="guardarAutoComanda()" style="width:18px;height:18px;">
+            Imprimir la comanda al cobrar
+        </label>
     </div>
 </div>
 
@@ -755,7 +760,29 @@ async function cobrar() {
     btn.textContent = textoBoton();
 }
 
+// ------------------------------------------------------------------
+// Comanda automática: se imprime en un marco oculto, sin abrir otra pestaña
+// ------------------------------------------------------------------
+function autoComandaActiva() {
+    try { return localStorage.getItem('autoComanda') !== '0'; } catch (e) { return true; }
+}
+
+function guardarAutoComanda() {
+    try { localStorage.setItem('autoComanda', $('auto-comanda').checked ? '1' : '0'); } catch (e) {}
+}
+
+function imprimirComanda(ventaId) {
+    const marco = document.createElement('iframe');
+    marco.setAttribute('aria-hidden', 'true');
+    marco.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+    marco.src = `/cocina/${ventaId}/comanda?auto=1`;
+    document.body.appendChild(marco);
+    setTimeout(() => marco.remove(), 60000);
+}
+
 function mostrarConfirmacion(data, porCobrar) {
+    if (data.cocina && autoComandaActiva()) imprimirComanda(data.venta_id);
+
     $('ok-contenido').innerHTML = `
         <div style="font-size:15px;color:#666;">¡Gracias! Te llamaremos como</div>
         <div style="font-size:38px;font-weight:bold;margin:10px 0;color:var(--marca);">${esc(data.etiqueta)}</div>
@@ -764,6 +791,7 @@ function mostrarConfirmacion(data, porCobrar) {
         ${data.cambio > 0 ? `<div style="font-size:26px;font-weight:bold;margin-top:12px;background:#fff3cd;color:#856404;border-radius:12px;padding:10px;">Cambio ${dinero(data.cambio)}</div>` : ''}
         <div style="display:flex;gap:10px;margin-top:20px;">
             <button class="btn btn-gris" style="flex:1;" onclick="window.open('/ventas/${data.venta_id}/ticket', '_blank')">Imprimir tiquete</button>
+            ${data.cocina ? `<button class="btn btn-gris" style="flex:1;" onclick="imprimirComanda(${data.venta_id})">${autoComandaActiva() ? 'Reimprimir comanda' : 'Imprimir comanda'}</button>` : ''}
             <button class="btn btn-marca" style="flex:1;" onclick="nuevaVenta()">Nueva venta</button>
         </div>`;
     $('modal-ok').classList.add('abierto');
@@ -783,6 +811,7 @@ function nuevaVenta() {
 }
 
 // Inicio
+$('auto-comanda').checked = autoComandaActiva();
 renderTabs();
 renderConvenios();
 renderCarrito();

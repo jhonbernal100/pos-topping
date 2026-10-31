@@ -93,7 +93,7 @@ class CocinaController extends Controller
     public function comanda(Venta $venta)
     {
         $this->verificarSede($venta);
-        $venta->load(['detalles.modificadores', 'sede', 'tenant']);
+        $venta->load(['detalles.modificadores', 'sede', 'tenant', 'cliente']);
 
         return view('cocina.comanda', compact('venta'));
     }
