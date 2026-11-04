@@ -283,6 +283,21 @@ function abrirProducto(id) {
     $('modal-producto').classList.add('abierto');
 }
 
+// Editar un producto ya agregado: abre el mismo configurador con lo que se eligió
+function editarItem(idx) {
+    const i = carrito[idx];
+    config = {
+        producto:   i.producto,
+        varianteId: i.varianteId,
+        cantidad:   i.cantidad,
+        seleccion:  { ...i.seleccion },
+        notas:      i.notas || '',
+        editando:   idx,
+    };
+    renderModal();
+    $('modal-producto').classList.add('abierto');
+}
+
 function cerrarModal() {
     $('modal-producto').classList.remove('abierto');
     config = null;
@@ -394,7 +409,7 @@ function renderModal() {
                 <button class="btn btn-gris" onclick="cambiarCantidad(1)" aria-label="Más">+</button>
             </div>
             <button class="btn btn-marca" style="flex:1;font-size:17px;" onclick="agregarAlPedido()" ${deshabilitado ? 'disabled' : ''}>
-                Agregar · ${dinero(ajustar(r.unitario) * c.cantidad)}
+                ${c.editando !== undefined ? 'Guardar cambios' : 'Agregar'} · ${dinero(ajustar(r.unitario) * c.cantidad)}
             </button>
         </div>`;
 
@@ -439,7 +454,7 @@ function agregarAlPedido() {
 
     const variante = c.producto.variantes.find(v => v.id === c.varianteId);
 
-    carrito.push({
+    const item = {
         uid:            Date.now() + Math.random(),
         producto:       c.producto,
         varianteId:     c.varianteId,
@@ -449,7 +464,13 @@ function agregarAlPedido() {
         notas:          (c.notas || '').trim(),
         unitario:       r.unitario,
         resumen:        r.resumen,
-    });
+    };
+
+    if (c.editando !== undefined) {
+        carrito[c.editando] = item;   // reemplaza el producto editado, en el mismo lugar
+    } else {
+        carrito.push(item);
+    }
 
     cerrarModal();
     renderCarrito();
@@ -488,7 +509,10 @@ function renderCarrito() {
                     <div style="display:flex;gap:6px;margin-top:6px;">
                         <button class="btn btn-gris" style="padding:4px 10px;font-size:13px;" onclick="cambiarCantidadItem(${idx}, -1)" aria-label="Menos">−</button>
                         <button class="btn btn-gris" style="padding:4px 10px;font-size:13px;" onclick="cambiarCantidadItem(${idx}, 1)" aria-label="Más">+</button>
-                        <button class="btn" style="padding:4px 10px;font-size:12px;background:#f8d7da;color:#721c24;margin-left:auto;" onclick="quitarItem(${idx})">Quitar</button>
+                        ${i.producto.variantes.length || i.producto.grupos.length
+                            ? `<button class="btn btn-gris" style="padding:4px 10px;font-size:12px;margin-left:auto;" onclick="editarItem(${idx})">Editar</button>`
+                            : ''}
+                        <button class="btn" style="padding:4px 10px;font-size:12px;background:#f8d7da;color:#721c24;${i.producto.variantes.length || i.producto.grupos.length ? '' : 'margin-left:auto;'}" onclick="quitarItem(${idx})">Quitar</button>
                     </div>
                 </div>`;
         }).join('');
