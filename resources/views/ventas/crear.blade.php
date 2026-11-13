@@ -611,9 +611,9 @@ function renderPagos() {
                     <label for="monto-0" style="font-size:12px;color:#666;">Recibe</label>
                     <input id="monto-0" type="number" inputmode="numeric" class="campo" value="${p.monto ?? ''}" placeholder="${total}"
                            oninput="pagos[0].monto = this.value === '' ? null : parseInt(this.value, 10); actualizarResumen();">
-                    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
-                        ${[null, 20000, 50000, 100000].map(v => `
-                            <button class="btn btn-gris" style="padding:8px 10px;font-size:12px;" onclick="pagos[0].monto = ${v}; renderPagos();">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;margin-top:6px;">
+                        ${[null, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000].map(v => `
+                            <button class="btn btn-gris" style="padding:8px 6px;font-size:12px;" onclick="pagos[0].monto = ${v}; renderPagos();">
                                 ${v ? dinero(v) : 'Exacto'}
                             </button>`).join('')}
                     </div>
