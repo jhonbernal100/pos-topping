@@ -38,11 +38,13 @@ class MenuController extends Controller
     // Crear / editar producto
     // ---------------------------------------------------------------
 
-    public function crear()
+    public function crear(Request $request)
     {
         $this->soloPropietario();
 
         $producto = new Producto([
+            // "+ Producto" desde una categoría la deja elegida
+            'categoria_menu_id'    => CategoriaMenu::find((int) $request->query('categoria'))?->id,
             'tipo_menu'            => 'preparado',
             'disponible_local'     => true,
             'disponible_domicilio' => true,
@@ -118,6 +120,113 @@ class MenuController extends Controller
             'activo'  => $modificador->activo,
             'mensaje' => $modificador->nombre . ($modificador->activo ? ' disponible' : ' marcado como agotado'),
         ]);
+    }
+
+    // ---------------------------------------------------------------
+    // Categorías del menú
+    // ---------------------------------------------------------------
+
+    public function guardarCategoria(Request $request)
+    {
+        $this->soloPropietario();
+        $nombre = $this->validarCategoria($request);
+
+        if (CategoriaMenu::whereRaw('LOWER(nombre) = ?', [mb_strtolower($nombre)])->exists()) {
+            return $this->errorMenu("Ya existe la categoría {$nombre}.");
+        }
+
+        $categoria = CategoriaMenu::create([
+            'tenant_id' => (int) session('tenant_id'),
+            'nombre'    => $nombre,
+            'orden'     => (int) CategoriaMenu::max('orden') + 1,
+            'activo'    => true,
+        ]);
+
+        return response()->json(['success' => true, 'mensaje' => "Categoría {$nombre} creada", 'id' => $categoria->id]);
+    }
+
+    public function actualizarCategoria(Request $request, CategoriaMenu $categoria)
+    {
+        $this->soloPropietario();
+        $nombre = $this->validarCategoria($request);
+
+        if (CategoriaMenu::whereKeyNot($categoria->id)->whereRaw('LOWER(nombre) = ?', [mb_strtolower($nombre)])->exists()) {
+            return $this->errorMenu("Ya existe la categoría {$nombre}.");
+        }
+
+        DB::transaction(function () use ($categoria, $nombre) {
+            $categoria->update(['nombre' => $nombre]);
+            // Los productos guardan también el nombre de la categoría (reportes)
+            Producto::where('categoria_menu_id', $categoria->id)->update(['categoria' => $nombre]);
+        });
+
+        return response()->json(['success' => true, 'mensaje' => "Categoría {$nombre} actualizada"]);
+    }
+
+    // Ocultar / mostrar en la caja y en el menú de domicilios
+    public function toggleCategoria(CategoriaMenu $categoria)
+    {
+        $this->soloPropietario();
+        $categoria->update(['activo' => !$categoria->activo]);
+
+        return response()->json([
+            'success' => true,
+            'activo'  => $categoria->activo,
+            'mensaje' => $categoria->activo ? "{$categoria->nombre} visible en la caja" : "{$categoria->nombre} oculta en la caja",
+        ]);
+    }
+
+    // Subir o bajar una posición en el orden de la caja
+    public function moverCategoria(Request $request, CategoriaMenu $categoria)
+    {
+        $this->soloPropietario();
+        $subir = $request->input('direccion') === 'arriba';
+
+        DB::transaction(function () use ($categoria, $subir) {
+            // Normalizar el orden (1, 2, 3...) y luego intercambiar con la vecina
+            $lista = CategoriaMenu::orderBy('orden')->orderBy('id')->get()->values();
+            $i     = $lista->search(fn ($c) => $c->id === $categoria->id);
+            $j     = $subir ? $i - 1 : $i + 1;
+
+            if ($j >= 0 && $j < $lista->count()) {
+                [$lista[$i], $lista[$j]] = [$lista[$j], $lista[$i]];
+            }
+
+            foreach ($lista as $pos => $c) {
+                if ($c->orden !== $pos + 1) {
+                    $c->update(['orden' => $pos + 1]);
+                }
+            }
+        });
+
+        return response()->json(['success' => true]);
+    }
+
+    // Solo se puede borrar vacía: los productos se mueven antes a otra categoría
+    public function eliminarCategoria(CategoriaMenu $categoria)
+    {
+        $this->soloPropietario();
+
+        $productos = Producto::withTrashed()->where('categoria_menu_id', $categoria->id)->count();
+        if ($productos > 0) {
+            return $this->errorMenu("{$categoria->nombre} tiene {$productos} " . ($productos === 1 ? 'producto' : 'productos')
+                . '. Muévelos a otra categoría (Editar producto) o, si solo quieres quitarla de la caja, ocúltala.');
+        }
+
+        $nombre = $categoria->nombre;
+        $categoria->delete();
+
+        return response()->json(['success' => true, 'mensaje' => "Categoría {$nombre} eliminada"]);
+    }
+
+    private function validarCategoria(Request $request): string
+    {
+        $data = $request->validate(
+            ['nombre' => 'required|string|max:100'],
+            ['nombre.required' => 'Escribe el nombre de la categoría.']
+        );
+
+        return trim($data['nombre']);
     }
 
     // ---------------------------------------------------------------

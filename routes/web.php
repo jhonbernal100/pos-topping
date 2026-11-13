@@ -208,6 +208,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/modificadores/{modificador}/toggle', [MenuController::class, 'toggleModificador'])->name('menu.toggleModificador');
         Route::post('/modificadores/{modificador}/actualizar', [MenuController::class, 'actualizarModificador'])->name('menu.actualizarModificador');
         Route::delete('/modificadores/{modificador}',      [MenuController::class, 'eliminarModificador'])->name('menu.eliminarModificador');
+        Route::post('/categorias',                         [MenuController::class, 'guardarCategoria'])->name('menu.guardarCategoria');
+        Route::post('/categorias/{categoria}/actualizar',  [MenuController::class, 'actualizarCategoria'])->name('menu.actualizarCategoria');
+        Route::post('/categorias/{categoria}/toggle',      [MenuController::class, 'toggleCategoria'])->name('menu.toggleCategoria');
+        Route::post('/categorias/{categoria}/mover',       [MenuController::class, 'moverCategoria'])->name('menu.moverCategoria');
+        Route::delete('/categorias/{categoria}',           [MenuController::class, 'eliminarCategoria'])->name('menu.eliminarCategoria');
         Route::post('/grupos',                             [MenuController::class, 'guardarGrupo'])->name('menu.guardarGrupo');
         Route::post('/grupos/{grupo}/actualizar',          [MenuController::class, 'actualizarGrupo'])->name('menu.actualizarGrupo');
         Route::post('/grupos/{grupo}/modificadores',       [MenuController::class, 'guardarModificador'])->name('menu.guardarModificador');

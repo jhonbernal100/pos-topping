@@ -25,6 +25,10 @@
                style="padding:10px 16px;background:#fff;color:#000;border:1px solid #ddd;border-radius:8px;text-decoration:none;font-size:14px;white-space:nowrap;">
                 Apariencia
             </a>
+            <button onclick="abrirCategoria()"
+               style="padding:10px 16px;background:#fff;color:#000;border:1px solid #ddd;border-radius:8px;font-size:14px;white-space:nowrap;cursor:pointer;">
+                + Nueva categoría
+            </button>
             <a href="/menu/productos/crear"
                style="padding:10px 20px;background:#000;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;white-space:nowrap;">
                 + Nuevo producto
@@ -36,10 +40,29 @@
 
     {{-- Productos por categoría --}}
     @foreach($categorias as $categoria)
-        <h2 style="font-size:17px;margin:20px 0 10px;">
-            {{ $categoria->nombre }}
-            <span style="font-size:12px;color:#888;font-weight:normal;">({{ $categoria->productos->count() }})</span>
-        </h2>
+        @php $btnCat = 'padding:5px 9px;background:#fff;border:1px solid #ddd;border-radius:7px;font-size:12px;cursor:pointer;'; @endphp
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:22px 0 10px;">
+            <h2 style="font-size:17px;{{ $categoria->activo ? '' : 'color:#999;' }}">
+                {{ $categoria->nombre }}
+                <span style="font-size:12px;color:#888;font-weight:normal;">({{ $categoria->productos->count() }})</span>
+                @unless($categoria->activo)
+                    <span style="font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;background:#f8d7da;color:#721c24;">Oculta en la caja</span>
+                @endunless
+            </h2>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button style="{{ $btnCat }}" onclick="moverCategoria({{ $categoria->id }}, 'arriba')" aria-label="Subir {{ $categoria->nombre }}"
+                        {{ $loop->first ? 'disabled' : '' }}>↑</button>
+                <button style="{{ $btnCat }}" onclick="moverCategoria({{ $categoria->id }}, 'abajo')" aria-label="Bajar {{ $categoria->nombre }}"
+                        {{ $loop->last ? 'disabled' : '' }}>↓</button>
+                <button style="{{ $btnCat }}" onclick='abrirCategoria(@json(["id" => $categoria->id, "nombre" => $categoria->nombre]))'>✎ Editar</button>
+                <button style="{{ $btnCat }}" onclick="toggleCategoria({{ $categoria->id }})">{{ $categoria->activo ? 'Ocultar' : 'Mostrar' }}</button>
+                @if($categoria->productos->isEmpty())
+                    <button style="{{ $btnCat }}color:#721c24;" onclick='eliminarCategoria({{ $categoria->id }}, @json($categoria->nombre))'>Eliminar</button>
+                @endif
+                <a href="/menu/productos/crear?categoria={{ $categoria->id }}"
+                   style="{{ $btnCat }}background:#000;color:#fff;border-color:#000;text-decoration:none;">+ Producto</a>
+            </div>
+        </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
             @forelse($categoria->productos as $producto)
@@ -241,6 +264,27 @@
         </div>
     </div>
 
+    {{-- Modal categoría --}}
+    <div id="modal-categoria" onclick="if (event.target === this) cerrarModales()"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+        <div style="background:#fff;border-radius:14px;padding:20px;width:100%;max-width:440px;" role="dialog" aria-modal="true">
+            <h3 id="c-titulo" style="font-size:18px;margin-bottom:14px;">Nueva categoría</h3>
+
+            <label for="c-nombre" style="display:block;font-size:13px;color:#555;margin-bottom:4px;">Nombre *</label>
+            <input id="c-nombre" maxlength="100" placeholder="Ej: Extras" autocomplete="off"
+                   style="width:100%;padding:11px;font-size:16px;border:2px solid #ddd;border-radius:8px;margin-bottom:6px;">
+            <div id="c-ayuda" style="font-size:12px;color:#888;margin-bottom:16px;">Aparece como pestaña en la caja y en el menú de domicilios.</div>
+
+            <div id="c-error" style="display:none;padding:8px;border-radius:8px;background:#f8d7da;color:#721c24;font-size:13px;margin-bottom:10px;"></div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button onclick="cerrarModales()" style="padding:11px 14px;background:#f2f2f2;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Cancelar</button>
+                <button id="c-guardar" onclick="guardarCategoria()"
+                        style="padding:11px 18px;background:#000;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">Guardar</button>
+            </div>
+        </div>
+    </div>
+
     {{-- Modal grupo --}}
     <div id="modal-grupo" onclick="if (event.target === this) cerrarModales()"
          style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;">
@@ -313,7 +357,58 @@ let edicion = null;   // { grupo, id? }
 function cerrarModales() {
     $m('modal-topping').style.display = 'none';
     $m('modal-grupo').style.display = 'none';
+    $m('modal-categoria').style.display = 'none';
     edicion = null;
+}
+
+// ------------------------------------------------------------------
+// Categorías
+// ------------------------------------------------------------------
+function abrirCategoria(cat = null) {
+    edicion = { categoria: cat ? cat.id : null };
+    $m('c-titulo').textContent = cat ? 'Editar categoría' : 'Nueva categoría';
+    $m('c-nombre').value = cat ? cat.nombre : '';
+    $m('c-ayuda').textContent = cat
+        ? 'El nuevo nombre se ve en la caja, en el menú de domicilios y en los reportes.'
+        : 'Aparece como pestaña en la caja y en el menú de domicilios. Después agrégale productos con "+ Producto".';
+    $m('c-error').style.display = 'none';
+    $m('modal-categoria').style.display = 'flex';
+    $m('c-nombre').focus();
+}
+
+async function guardarCategoria() {
+    const nombre = $m('c-nombre').value.trim();
+    if (!nombre) { $m('c-error').textContent = 'Escribe el nombre de la categoría.'; $m('c-error').style.display = 'block'; return; }
+
+    const url = edicion.categoria ? `/menu/categorias/${edicion.categoria}/actualizar` : '/menu/categorias';
+    $m('c-guardar').disabled = true;
+    const data = await enviar(url, 'POST', { nombre }, 'c-error');
+    $m('c-guardar').disabled = false;
+    if (data) location.reload();
+}
+
+async function accionCategoria(url, metodo, cuerpo) {
+    const res = await fetch(url, {
+        method: metodo,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+        body: cuerpo ? JSON.stringify(cuerpo) : null,
+    });
+    const data = await res.json().catch(() => ({ success: false }));
+    if (!data.success) {
+        alert(data.mensaje ?? data.message ?? 'No se pudo completar la acción.');
+        return;
+    }
+    location.reload();
+}
+
+function toggleCategoria(id)        { accionCategoria(`/menu/categorias/${id}/toggle`, 'POST'); }
+function moverCategoria(id, dir)    { accionCategoria(`/menu/categorias/${id}/mover`, 'POST', { direccion: dir }); }
+function eliminarCategoria(id, nombre) {
+    if (confirm(`¿Eliminar la categoría ${nombre}?`)) accionCategoria(`/menu/categorias/${id}`, 'DELETE');
 }
 
 function abrirTopping(grupoId, grupoNombre, grupoPrecio, mod = null) {
@@ -413,6 +508,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') cerrarModales();
     if (e.key === 'Enter' && $m('modal-topping').style.display === 'flex') guardarTopping();
     if (e.key === 'Enter' && $m('modal-grupo').style.display === 'flex') guardarGrupo();
+    if (e.key === 'Enter' && $m('modal-categoria').style.display === 'flex') guardarCategoria();
 });
 
 async function toggleModificador(id) {
