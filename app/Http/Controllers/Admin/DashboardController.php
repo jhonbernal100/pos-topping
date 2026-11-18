@@ -44,7 +44,7 @@ class DashboardController extends Controller
         ->limit(5)
         ->get();
 
-    $ferreterias = Tenant::with('usuarios')
+    $ferreterias = Tenant::with(['usuarios', 'sedes:id,tenant_id,nombre,activo'])
         ->orderByDesc('created_at')
         ->get()
         ->map(function ($tenant) {
@@ -125,9 +125,21 @@ class DashboardController extends Controller
     public function cambiarPlan(Request $request, Tenant $tenant)
     {
         $request->validate([
-            'plan'  => 'required|in:trial,activa,vencida,suspendida',
-            'meses' => 'nullable|integer|min:1',
+            'plan'    => 'required|in:trial,activa,vencida,suspendida',
+            'meses'   => 'nullable|integer|min:1',
+            'sedes'   => 'nullable|array',
+            'sedes.*' => 'integer',
         ]);
+
+        // Sedes incluidas en el plan: las demás quedan sin acceso (no se borra nada)
+        if (is_array($request->sedes)) {
+            $ids = $tenant->sedes()->whereIn('id', $request->sedes)->pluck('id');
+            if ($ids->isEmpty()) {
+                return response()->json(['success' => false, 'mensaje' => 'Elige al menos una sede para el plan.'], 422);
+            }
+            $tenant->sedes()->update(['activo' => false]);
+            $tenant->sedes()->whereIn('id', $ids)->update(['activo' => true]);
+        }
 
         $data = [
             'subscription_status' => $request->plan,
@@ -156,7 +168,8 @@ class DashboardController extends Controller
             'success' => true,
             'mensaje' => 'Plan actualizado: ' . strtoupper($request->plan) .
                          ($request->plan === 'activa' && $request->meses
-                             ? " por {$request->meses} meses · " . $tenant->sedesCobradas() . ' sede(s) · $'
+                             ? " por {$request->meses} meses · " . $tenant->sedesCobradas() . ' sede(s): '
+                               . $tenant->sedes()->where('activo', true)->pluck('nombre')->join(', ') . ' · $'
                                . number_format($tenant->precioPlan($data['subscription_plan']), 0, ',', '.')
                              : ''),
         ]);

@@ -8,7 +8,7 @@ use Carbon\Carbon;
 class Tenant extends Model
 {
     protected $fillable = [
-        'nombre', 'nit', 'telefono',
+        'nombre', 'nit', 'telefono', 'correo_contacto',
         'direccion', 'ciudad', 'plan', 'activo',
         'alegra_user', 'alegra_token',
         'alegra_resolucion_id', 'facturacion_electronica',

@@ -130,7 +130,9 @@ class Bot
 
         $this->responder($conv, $bienvenida
             . "\n\n📍 Para empezar, *comparte tu ubicación*: toca el clip 📎 (o el +), elige *Ubicación* y envía tu ubicación actual."
-            . "\n\nEn cualquier momento puedes escribir *asesor* para hablar con una persona.");
+            . "\n\nEn cualquier momento puedes escribir *asesor* para hablar con una persona."
+            . "\n\n🔒 Al compartir tus datos aceptas su tratamiento según nuestra política de privacidad: "
+            . url('/privacidad/' . $tenant->nit));
     }
 
     private function enUbicacion(Tenant $tenant, ConversacionWa $conv, string $tipo, array $m): void

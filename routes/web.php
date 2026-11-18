@@ -23,6 +23,7 @@ use App\Http\Controllers\CompraController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\DomicilioController;
 use App\Http\Controllers\PedidoWebController;
+use App\Http\Controllers\PrivacidadController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MensajeController;
 use App\Http\Middleware\EnsureSuperAdmin;
@@ -55,6 +56,10 @@ Route::prefix('trial')->group(function () {
 Route::get('/planes', [PlanesController::class, 'index'])->name('planes.index');
 
 // Menú web público para pedidos a domicilio (enlace que envía el bot de WhatsApp)
+// Políticas de tratamiento de datos personales (públicas)
+Route::get('/privacidad', [PrivacidadController::class, 'avanzas'])->name('privacidad.avanzas');
+Route::get('/privacidad/{nit}', [PrivacidadController::class, 'cliente'])->where('nit', '[0-9.\-]+')->name('privacidad.cliente');
+
 Route::get('/pedir/{token}',  [PedidoWebController::class, 'mostrar'])->name('pedir.mostrar');
 Route::post('/pedir/{token}', [PedidoWebController::class, 'enviar'])->middleware('throttle:20,1')->name('pedir.enviar');
 

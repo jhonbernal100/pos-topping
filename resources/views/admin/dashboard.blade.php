@@ -335,6 +335,13 @@
                         <span class="badge badge-{{ $tenant->subscription_status }}">
                             {{ strtoupper($tenant->subscription_status) }}
                         </span>
+                        @php $sedesFuera = $tenant->sedes->where('activo', false); @endphp
+                        @if($sedesFuera->isNotEmpty())
+                            <div style="font-size:10px;color:#856404;margin-top:4px;">
+                                Plan: {{ $tenant->sedes->where('activo', true)->pluck('nombre')->join(', ') }}
+                                ({{ $tenant->sedes->where('activo', true)->count() }}/{{ $tenant->sedes->count() }})
+                            </div>
+                        @endif
                     </td>
                     <td style="text-align:center;">
                         @if($tenant->subscription_plan === 'anual')
@@ -381,7 +388,7 @@
                                 + Dias
                             </button>
                             <button class="btn-sm btn-plan"
-                                onclick="abrirModalPlan({{ $tenant->id }}, '{{ addslashes($tenant->nombre) }}')">
+                                onclick='abrirModalPlan({{ $tenant->id }}, @json($tenant->nombre), @json($tenant->sedes->map(fn ($s) => ["id" => $s->id, "nombre" => $s->nombre, "activo" => (bool) $s->activo])->values()))'>
                                 Plan
                             </button>
                             <button class="btn-sm btn-plan"
@@ -463,10 +470,16 @@
         </div>
         <div class="modal-campo">
             <label>Meses de suscripcion (si es activa)</label>
-            <select id="input-meses">
+            <select id="input-meses" onchange="valorPlan()">
                 <option value="3">3 meses — Trimestral $45,000/mes por sede</option>
                 <option value="12">12 meses — Anual $35,000/mes por sede</option>
             </select>
+        </div>
+        <div class="modal-campo" id="campo-sedes-plan">
+            <label>Sedes incluidas en el plan</label>
+            <div id="lista-sedes-plan" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <p id="valor-plan" style="font-size:13px;margin-top:8px;"></p>
+            <p style="font-size:12px;color:#888;margin-top:4px;">Las sedes sin marcar quedan sin acceso: sus usuarios no pueden entrar y no se pueden vender ahí. Sus datos se conservan.</p>
         </div>
         <div class="modal-btns">
             <button class="modal-btn-cancel" onclick="cerrarModales()">Cancelar</button>
@@ -564,10 +577,27 @@ function abrirModalAmpliar(id, nombre) {
     document.getElementById('modal-ampliar').classList.add('activo');
 }
 
-function abrirModalPlan(id, nombre) {
+const PLANES_PRECIO = { 3: 45000, 12: 35000 };
+
+function abrirModalPlan(id, nombre, sedes) {
     tenantActual = id;
     document.getElementById('modal-plan-nombre').textContent = nombre;
+    document.getElementById('lista-sedes-plan').innerHTML = (sedes || []).map(s => `
+        <label style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer;">
+            <input type="checkbox" class="sede-plan" value="${s.id}" ${s.activo ? 'checked' : ''} onchange="valorPlan()" style="width:18px;height:18px;">
+            ${s.nombre.replace(/[<>&]/g, '')}
+        </label>`).join('');
+    valorPlan();
     document.getElementById('modal-plan').classList.add('activo');
+}
+
+function valorPlan() {
+    const n     = document.querySelectorAll('.sede-plan:checked').length;
+    const meses = parseInt(document.getElementById('input-meses').value, 10);
+    const total = (PLANES_PRECIO[meses] || 0) * meses * n;
+    document.getElementById('valor-plan').innerHTML = n
+        ? `Valor del plan: <strong>$${total.toLocaleString('es-CO')}</strong> (${n} ${n === 1 ? 'sede' : 'sedes'} × ${meses} meses)`
+        : '<span style="color:#c00;">Marca al menos una sede.</span>';
 }
 
 function abrirModalProductos(id, nombre, extra) {
@@ -639,13 +669,16 @@ async function confirmarAmpliar() {
 async function confirmarPlan() {
     const plan  = document.getElementById('input-plan').value;
     const meses = document.getElementById('input-meses').value;
+    const sedes = [...document.querySelectorAll('.sede-plan:checked')].map(c => parseInt(c.value, 10));
+    if (!sedes.length) { alert('Marca al menos una sede.'); return; }
     const res   = await fetch(`/admin/ferreterias/${tenantActual}/cambiar-plan`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
         },
-        body: JSON.stringify({ plan, meses }),
+        body: JSON.stringify({ plan, meses, sedes }),
     });
     const data = await res.json();
     cerrarModales();

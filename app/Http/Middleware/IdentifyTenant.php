@@ -17,6 +17,7 @@ class IdentifyTenant
             $request->is('trial*') ||
             $request->is('planes*') ||
             $request->is('pedir/*') ||
+            $request->is('privacidad*') ||
             $request->is('login') ||
             $request->is('logout')
         ) {
@@ -42,6 +43,13 @@ class IdentifyTenant
                 if ($tenant && $tenant->activo && $tenant->tieneAcceso()) {
                     session(['tenant_id' => $tenant->id]);
                     config(['app.current_tenant_id' => $tenant->id]);
+
+                    // Sede fuera del plan contratado: sus usuarios no pueden operar
+                    $sinPlan = $this->sedeSinPlan($user);
+                    if ($sinPlan && !$request->is('logout')) {
+                        return response()->view('errors.sede-sin-plan', ['tenant' => $tenant, 'sede' => $sinPlan], 403);
+                    }
+
                     $this->resolverSedeActiva($user);
                     return $next($request);
                 }
@@ -63,6 +71,22 @@ class IdentifyTenant
 
         // Sin tenants registrados — dejar que auth redirija al login
         return $next($request);
+    }
+
+    // Sede del usuario que no está incluida en el plan (sedes.activo = false)
+    private function sedeSinPlan($user): ?\App\Models\Sede
+    {
+        if ($user->sede_id) {
+            $sede = \App\Models\Sede::withoutGlobalScopes()->find($user->sede_id);
+            return $sede && !$sede->activo ? $sede : null;
+        }
+
+        // Propietario: si ninguna sede está en el plan, no hay dónde operar
+        if (empty($user->sedesPermitidasIds())) {
+            return \App\Models\Sede::withoutGlobalScopes()->where('tenant_id', $user->tenant_id)->first();
+        }
+
+        return null;
     }
 
     // Fija la sede con la que trabaja el usuario en esta sesión

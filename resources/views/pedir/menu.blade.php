@@ -81,6 +81,9 @@
 <div id="app">
     <div class="tabs" id="tabs"></div>
     <div id="catalogo"></div>
+    <p style="text-align:center;font-size:12px;color:#888;margin:24px 0 110px;">
+        <a href="{{ url('/privacidad/' . $tenant->nit) }}" target="_blank" rel="noopener" style="color:inherit;">Política de privacidad</a>
+    </p>
 </div>
 
 <div class="barra" id="barra">
