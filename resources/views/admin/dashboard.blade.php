@@ -395,6 +395,12 @@
                                 onclick="abrirModalProductos({{ $tenant->id }}, '{{ addslashes($tenant->nombre) }}', {{ (int) $tenant->productos_extra }})">
                                 Productos
                             </button>
+                            @php $ultimoContrato = $tenant->contratos->first(); @endphp
+                            <button class="btn-sm btn-plan" style="{{ $ultimoContrato ? 'background:#1e8e3e;' : '' }}"
+                                title="{{ $ultimoContrato ? 'Firmado el ' . $ultimoContrato->fecha_firma->format('d/m/Y') : 'Sin contrato firmado' }}"
+                                onclick='abrirModalContrato({{ $tenant->id }}, @json($tenant->nombre))'>
+                                Contrato{{ $tenant->contratos->count() ? ' (' . $tenant->contratos->count() . ')' : '' }}
+                            </button>
                             <button class="btn-sm btn-mensaje"
                                 onclick="abrirModalMensaje({{ $tenant->id }}, '{{ addslashes($tenant->nombre) }}')">
                                 Mensaje
@@ -432,6 +438,51 @@
         <div class="modal-btns">
             <button class="modal-btn-cancel" onclick="cerrarModales()">Cancelar</button>
             <button class="modal-btn-ok" onclick="confirmarAmpliar()">Ampliar</button>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL CONTRATOS --}}
+<div class="modal-overlay" id="modal-contrato">
+    <div class="modal" style="max-width:560px;">
+        <h3>Contratos firmados</h3>
+        <p id="modal-contrato-nombre" style="font-size:13px;color:#888;margin-bottom:12px;"></p>
+
+        <div id="lista-contratos" style="margin-bottom:16px;font-size:13px;"></div>
+
+        <div style="border-top:1px solid #eee;padding-top:14px;">
+            <div style="font-size:14px;font-weight:bold;margin-bottom:10px;">Cargar contrato firmado</div>
+            <p style="font-size:12px;color:#888;margin-bottom:10px;">
+                Descarga de <a href="https://sign.zoho.com/" target="_blank" rel="noopener">Zoho Sign</a> el PDF firmado con su certificado de finalización y súbelo aquí.
+            </p>
+            <div class="modal-campo">
+                <label>PDF firmado *</label>
+                <input type="file" id="contrato-archivo" accept="application/pdf,.pdf">
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;">
+                <div class="modal-campo">
+                    <label>Fecha de firma *</label>
+                    <input type="date" id="contrato-firma" style="width:100%;min-width:0;box-sizing:border-box;" max="{{ now()->format('Y-m-d') }}" value="{{ now()->format('Y-m-d') }}">
+                </div>
+                <div class="modal-campo">
+                    <label>Vigencia desde</label>
+                    <input type="date" id="contrato-desde" style="width:100%;min-width:0;box-sizing:border-box;">
+                </div>
+                <div class="modal-campo">
+                    <label>Vigencia hasta</label>
+                    <input type="date" id="contrato-hasta" style="width:100%;min-width:0;box-sizing:border-box;">
+                </div>
+            </div>
+            <div class="modal-campo">
+                <label>Notas</label>
+                <input type="text" id="contrato-notas" maxlength="255" placeholder="Ej: Plan anual sede Diagonal 48 Sur">
+            </div>
+            <p id="contrato-error" style="display:none;color:#c00;font-size:13px;margin-bottom:10px;"></p>
+        </div>
+
+        <div class="modal-btns">
+            <button class="modal-btn-cancel" onclick="cerrarModales()">Cerrar</button>
+            <button class="modal-btn-ok" id="btn-subir-contrato" onclick="subirContrato()">Cargar contrato</button>
         </div>
     </div>
 </div>
@@ -598,6 +649,92 @@ function valorPlan() {
     document.getElementById('valor-plan').innerHTML = n
         ? `Valor del plan: <strong>$${total.toLocaleString('es-CO')}</strong> (${n} ${n === 1 ? 'sede' : 'sedes'} × ${meses} meses)`
         : '<span style="color:#c00;">Marca al menos una sede.</span>';
+}
+
+// ------------------------------------------------------------------
+// Contratos firmados
+// ------------------------------------------------------------------
+const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+async function abrirModalContrato(id, nombre) {
+    tenantActual = id;
+    document.getElementById('modal-contrato-nombre').textContent = nombre;
+    document.getElementById('contrato-archivo').value = '';
+    document.getElementById('contrato-notas').value = '';
+    document.getElementById('contrato-error').style.display = 'none';
+    document.getElementById('modal-contrato').classList.add('activo');
+    await cargarContratos();
+}
+
+async function cargarContratos() {
+    const caja = document.getElementById('lista-contratos');
+    caja.textContent = 'Cargando…';
+    const res  = await fetch(`/admin/ferreterias/${tenantActual}/contratos`, { headers: { 'Accept': 'application/json' } });
+    const data = await res.json();
+    if (!data.contratos.length) {
+        caja.innerHTML = '<div style="color:#999;">Aún no hay contratos cargados.</div>';
+        return;
+    }
+    caja.innerHTML = data.contratos.map(c => `
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+            <div style="min-width:0;">
+                <div style="font-weight:bold;word-break:break-word;">${escHtml(c.nombre)}</div>
+                <div style="color:#666;">Firmado el ${escHtml(c.firma)}${c.vigencia ? ' · Vigencia ' + escHtml(c.vigencia) : ''}</div>
+                ${c.notas ? `<div style="color:#666;">${escHtml(c.notas)}</div>` : ''}
+                <div style="color:#aaa;font-size:11px;">Cargado ${escHtml(c.subido)} · ${(c.tamano / 1024).toFixed(0)} KB</div>
+            </div>
+            <div style="display:flex;gap:4px;flex-shrink:0;">
+                <a class="btn-sm btn-plan" href="${c.descargar}" style="text-decoration:none;">Descargar</a>
+                <button class="btn-sm btn-eliminar" onclick="eliminarContrato(${c.id})">Eliminar</button>
+            </div>
+        </div>`).join('');
+}
+
+async function subirContrato() {
+    const err     = document.getElementById('contrato-error');
+    const archivo = document.getElementById('contrato-archivo').files[0];
+    err.style.display = 'none';
+    if (!archivo) { err.textContent = 'Elige el PDF del contrato firmado.'; err.style.display = 'block'; return; }
+
+    const form = new FormData();
+    form.append('archivo', archivo);
+    form.append('fecha_firma', document.getElementById('contrato-firma').value);
+    form.append('vigencia_desde', document.getElementById('contrato-desde').value);
+    form.append('vigencia_hasta', document.getElementById('contrato-hasta').value);
+    form.append('notas', document.getElementById('contrato-notas').value);
+
+    const btn = document.getElementById('btn-subir-contrato');
+    btn.disabled = true;
+    btn.textContent = 'Cargando…';
+    try {
+        const res  = await fetch(`/admin/ferreterias/${tenantActual}/contratos`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            body: form,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+            err.textContent = data.mensaje ?? data.message ?? (res.status === 413 ? 'El archivo es demasiado grande para el servidor.' : 'No se pudo cargar el contrato.');
+            err.style.display = 'block';
+            return;
+        }
+        mostrarFlash(data.mensaje);
+        setTimeout(() => location.reload(), 1200);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Cargar contrato';
+    }
+}
+
+async function eliminarContrato(id) {
+    if (!confirm('¿Eliminar este contrato? Se borra también el PDF del servidor.')) return;
+    const res  = await fetch(`/admin/contratos/${id}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+    });
+    const data = await res.json();
+    mostrarFlash(data.mensaje);
+    cargarContratos();
 }
 
 function abrirModalProductos(id, nombre, extra) {

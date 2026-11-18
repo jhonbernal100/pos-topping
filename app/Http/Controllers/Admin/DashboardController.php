@@ -44,7 +44,7 @@ class DashboardController extends Controller
         ->limit(5)
         ->get();
 
-    $ferreterias = Tenant::with(['usuarios', 'sedes:id,tenant_id,nombre,activo'])
+    $ferreterias = Tenant::with(['usuarios', 'sedes:id,tenant_id,nombre,activo', 'contratos:id,tenant_id,fecha_firma'])
         ->orderByDesc('created_at')
         ->get()
         ->map(function ($tenant) {

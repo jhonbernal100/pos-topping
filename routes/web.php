@@ -25,6 +25,7 @@ use App\Http\Controllers\DomicilioController;
 use App\Http\Controllers\PedidoWebController;
 use App\Http\Controllers\PrivacidadController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ContratoController;
 use App\Http\Controllers\Admin\MensajeController;
 use App\Http\Middleware\EnsureSuperAdmin;
 
@@ -233,6 +234,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/ferreterias/{tenant}/ampliar-trial', [DashboardController::class, 'ampliarTrial'])->name('admin.ampliarTrial');
         Route::post('/ferreterias/{tenant}/cambiar-plan', [DashboardController::class, 'cambiarPlan'])->name('admin.cambiarPlan');
         Route::post('/ferreterias/{tenant}/productos-extra', [DashboardController::class, 'productosExtra'])->name('admin.productosExtra');
+        // Contratos firmados (Zoho Sign)
+        Route::get('/ferreterias/{tenant}/contratos',  [ContratoController::class, 'index'])->name('admin.contratos');
+        Route::post('/ferreterias/{tenant}/contratos', [ContratoController::class, 'store'])->name('admin.contratos.store');
+        Route::get('/contratos/{contrato}/descargar',  [ContratoController::class, 'descargar'])->name('admin.contratos.descargar');
+        Route::delete('/contratos/{contrato}',         [ContratoController::class, 'destroy'])->name('admin.contratos.eliminar');
         Route::delete('/ferreterias/{tenant}/eliminar', [DashboardController::class, 'eliminarFerreteria'])->name('admin.eliminarFerreteria');
         Route::post('/mensajes/enviar',        [MensajeController::class, 'enviar'])->name('admin.mensajes.enviar');
         Route::post('/mensajes/masivo',        [MensajeController::class, 'enviarMasivo'])->name('admin.mensajes.masivo');

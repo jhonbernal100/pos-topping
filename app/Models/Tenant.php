@@ -119,5 +119,10 @@ class Tenant extends Model
     public function proveedores() { return $this->hasMany(Proveedor::class); }
     public function ventas()      { return $this->hasMany(Venta::class); }
     public function usuarios()    { return $this->hasMany(User::class); }
+    public function contratos()
+    {
+        return $this->hasMany(Contrato::class)->orderByDesc('fecha_firma')->orderByDesc('id');
+    }
+
     public function sedes()       { return $this->hasMany(Sede::class); }
 }
